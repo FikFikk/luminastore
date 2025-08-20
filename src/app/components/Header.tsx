@@ -2,11 +2,34 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ReactNode, useEffect, useState } from "react";
 
 export default function Header() {
+  const [user, setUser] = useState<{
+      FirstName: ReactNode;
+      Surname: ReactNode; name?: string 
+} | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/user");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
     <>
-      {/* Start Header/Navigation */}
       <nav
         className="custom-navbar navbar navbar-expand-md navbar-dark bg-dark"
         aria-label="Furni navigation bar"
@@ -43,30 +66,26 @@ export default function Header() {
 
             <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
               <li>
-                <Link className="nav-link" href="#">
-                  <Image
-                    src="/assets/images/user.svg"
-                    alt="User"
-                    width={20}
-                    height={20}
-                  />
+                {user ? (
+                <span className="nav-link text-white">
+                    Hi, {user.FirstName} {user.Surname}
+                </span>
+                ) : (
+                <Link className="nav-link" href="/login">
+                    <Image src="/assets/images/user.svg" alt="User" width={20} height={20} />
                 </Link>
+                )}
+
               </li>
               <li>
                 <Link className="nav-link" href="/cart">
-                  <Image
-                    src="/assets/images/cart.svg"
-                    alt="Cart"
-                    width={20}
-                    height={20}
-                  />
+                  <Image src="/assets/images/cart.svg" alt="Cart" width={20} height={20} />
                 </Link>
               </li>
             </ul>
           </div>
         </div>
       </nav>
-      {/* End Header/Navigation */}
     </>
   );
 }

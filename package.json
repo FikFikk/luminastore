@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.7",
+    "js-cookie": "^3.0.5",
     "next": "15.4.7",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
