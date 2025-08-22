@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 
-export default function Footer() {
+export default function Footer({showHeader = true} : {showHeader?: boolean}) {
   return (
-    <footer className="footer-section bg-light pt-5">
+    <footer className="footer-section bg-light pt-5"
+    style={{display: !showHeader ? "none" : ""}}
+    >
       <div className="container relative">
 
         {/* Sofa image */}

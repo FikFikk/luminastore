@@ -5,6 +5,7 @@ import Script from "next/script";
 import "./globals.css"; // kalau kamu punya CSS global
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import ClientLayout from "./ClientLayout";
 
 const geistSans = Geist({
 variable: "--font-geist-sans",
@@ -47,9 +48,7 @@ return (
 		<link href="/assets/css/style.css" rel="stylesheet" />
 	</head>
 	<body className={`${geistSans.variable} ${geistMono.variable}`}>
-		<Header />
-		{children}
-		<Footer />
+		<ClientLayout>{children}</ClientLayout>
 
 		{/* JS Bootstrap bundle */}
 		<Script src="/assets/js/bootstrap.bundle.min.js" strategy="beforeInteractive" />

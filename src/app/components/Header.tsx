@@ -3,12 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
-export default function Header() {
+export default function Header({showHeader = true} : {showHeader?: boolean}) {
   const [user, setUser] = useState<{
-      FirstName: ReactNode;
-      Surname: ReactNode; name?: string 
-} | null>(null);
+    FirstName: ReactNode;
+    Surname: ReactNode;
+    name?: string;
+  } | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -28,10 +33,39 @@ export default function Header() {
     fetchUser();
   }, []);
 
+  const handleLogout = async () => {
+    const token = Cookies.get("token");
+    if (!token) {
+      alert("Token tidak ditemukan");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        Cookies.remove("token");
+        setUser(null);
+        router.push("/login");
+      } else {
+        alert(data.message || "Logout gagal");
+      }
+    } catch (err) {
+      alert("Terjadi error saat logout");
+    }
+  };
+
   return (
     <>
       <nav
-        className="custom-navbar navbar navbar-expand-md navbar-dark bg-dark"
+        className={'custom-navbar navbar navbar-expand-md navbar-dark bg-dark'}
+        style={{display: !showHeader ? "none" : ""}}
         aria-label="Furni navigation bar"
       >
         <div className="container">
@@ -65,21 +99,62 @@ export default function Header() {
             </ul>
 
             <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
-              <li>
+              <li className="nav-item dropdown">
                 {user ? (
-                <span className="nav-link text-white">
-                    Hi, {user.FirstName} {user.Surname}
-                </span>
+                  <>
+                    <a
+                      className="nav-link dropdown-toggle text-white"
+                      href="#"
+                      id="userDropdown"
+                      role="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Hi, {user.FirstName} {user.Surname}
+                    </a>
+                    <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                      <li>
+                        <Link className="dropdown-item" href="/profile">
+                          Profile
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item" href="/change-password">
+                          Change Password
+                        </Link>
+                      </li>
+                      <li>
+                        <hr className="dropdown-divider" />
+                      </li>
+                      <li>
+                        <button
+                          onClick={handleLogout}
+                          className="dropdown-item text-danger"
+                        >
+                          Logout
+                        </button>
+                      </li>
+                    </ul>
+                  </>
                 ) : (
-                <Link className="nav-link" href="/login">
-                    <Image src="/assets/images/user.svg" alt="User" width={20} height={20} />
-                </Link>
+                  <Link className="nav-link" href="/login">
+                    <Image
+                      src="/assets/images/user.svg"
+                      alt="User"
+                      width={20}
+                      height={20}
+                    />
+                  </Link>
                 )}
-
               </li>
               <li>
                 <Link className="nav-link" href="/cart">
-                  <Image src="/assets/images/cart.svg" alt="Cart" width={20} height={20} />
+                  <Image
+                    src="/assets/images/cart.svg"
+                    alt="Cart"
+                    width={20}
+                    height={20}
+                  />
                 </Link>
               </li>
             </ul>
