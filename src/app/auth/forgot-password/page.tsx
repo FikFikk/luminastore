@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { forgotPassword } from "@/services/authService";
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -21,7 +22,6 @@ function ForgotPasswordPage() {
       return;
     }
 
-    // Validasi email format di frontend juga
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setMessage("Format email tidak valid");
@@ -29,31 +29,16 @@ function ForgotPasswordPage() {
       return;
     }
 
-    try {
-      const res = await fetch("http://localhost:8080/api/auth/forgot_password", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ Email: email }),
-      });
+    const { ok, data } = await forgotPassword(email);
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage("Email reset password telah dikirim! ✅ Silakan cek inbox Anda.");
-        setIsSuccess(true);
-        setEmail("");
-      } else {
-        setMessage(data.message || `Gagal mengirim email reset (${res.status})`);
-      }
-    } catch (err) {
-      console.error('Frontend error:', err);
-      setMessage("Terjadi error saat mengirim email reset. Silakan coba lagi.");
-    } finally {
-      setIsLoading(false);
+    if (ok) {
+      setMessage("Email reset password telah dikirim! ✅ Silakan cek inbox Anda.");
+      setIsSuccess(true);
+      setEmail("");
+    } else {
+      setMessage(data.message || "Gagal mengirim email reset.");
     }
+    setIsLoading(false);
   };
 
   return (

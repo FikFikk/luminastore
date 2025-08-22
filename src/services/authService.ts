@@ -1,26 +1,28 @@
 // services/authService.ts
 
 export interface ForgotPasswordResponse {
-  message: string;
+	ok: boolean;
+	status: number;
+	data: { message: string };
 }
 
 const API_BASE = "http://localhost:8080/api/auth";
 
 export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-  const res = await fetch(`${API_BASE}/forgot_password`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify({ Email: email }),
-  });
+	const res = await fetch(`${API_BASE}/forgot_password`, {
+		method: "POST",
+		headers: {
+		"Content-Type": "application/json",
+		"Accept": "application/json"
+		},
+		body: JSON.stringify({ Email: email }),
+	});
 
-  const data = await res.json();
+	const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.message || `Request failed with status ${res.status}`);
-  }
-
-  return data;
+	return {
+		ok: res.ok,
+		status: res.status,
+		data
+	};
 }
