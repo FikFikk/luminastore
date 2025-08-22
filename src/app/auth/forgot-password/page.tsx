@@ -30,7 +30,7 @@ function ForgotPasswordPage() {
     }
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch("http://localhost:8080/api/auth/forgot_password", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -135,12 +135,16 @@ function ForgotPasswordPage() {
                     </div>
                     <p className="text-muted small mt-3 mb-4">
                       Tidak menerima email? Cek folder spam/junk atau 
-                      <button 
-                        className="btn btn-link p-0 text-decoration-none text-primary fw-semibold"
-                        onClick={() => {setIsSuccess(false); setMessage("");}}
+                      <button
+                        className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold rounded-pill px-3 py-1"
+                        onClick={() => {
+                          setIsSuccess(false);
+                          setMessage("");
+                        }}
                       >
-                        kirim ulang
+                        <i className="bi bi-arrow-repeat"></i> Kirim Ulang
                       </button>
+
                     </p>
                   </div>
                 )}
