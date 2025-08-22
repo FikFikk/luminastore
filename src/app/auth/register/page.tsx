@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { register } from "@/services/authService";
 import Link from "next/link";
 
 function RegisterPage() {
@@ -42,19 +43,14 @@ function RegisterPage() {
     }
 
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          FirstName: firstName,
-          Surname: surname,
-          Email: email,
-          Password: password,
-          PhoneNumber: phoneNumber
-        }),
+      // memanggil authService.register
+      const res = await register({
+        FirstName: firstName,
+        Surname: surname,
+        Email: email,
+        Password: password,
+        PhoneNumber: phoneNumber,
       });
-
-      const data = await res.json();
 
       if (res.ok) {
         setMessage("Registrasi berhasil! ✅ Redirecting ke halaman login...");
@@ -62,7 +58,7 @@ function RegisterPage() {
           router.push("/login");
         }, 2000);
       } else {
-        setMessage(data.message || `Registrasi gagal (${res.status})`);
+        setMessage(res.data.message || `Registrasi gagal (${res.status})`);
       }
     } catch (err) {
       setMessage("Terjadi error saat registrasi. Silakan coba lagi.");

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { login } from "@/services/authService";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,45 +14,37 @@ function LoginPage() {
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage("");
+		e.preventDefault();
+		setIsLoading(true);
+		setMessage("");
 
-    if (!email || !password) {
-      setMessage("Email dan password harus diisi");
-      setIsLoading(false);
-      return;
-    }
+		if (!email || !password) {
+			setMessage("Email dan password harus diisi");
+			setIsLoading(false);
+			return;
+		}
 
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Email: email, Password: password }),
-      });
+		try {
+		const res = await login(email, password);
 
-      const data = await res.json();
+		if (res.ok && res.data.access_token) {
+			Cookies.set("token", res.data.access_token, { 
+			expires: 1,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "strict"
+			});
 
-      if (res.ok) {
-        Cookies.set("token", data.access_token, { 
-          expires: 1,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-
-        setMessage("Login berhasil ✅");
-        setTimeout(() => {
-          router.push("/");
-        }, 1000);
-      } else {
-        setMessage(data.message || `Login gagal (${res.status})`);
-      }
-    } catch (err) {
-      setMessage("Terjadi error saat login. Silakan coba lagi.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+			setMessage("Login berhasil ✅");
+			setTimeout(() => router.push("/"), 1000);
+		} else {
+			setMessage(res.data.message || `Login gagal (${res.status})`);
+		}
+		} catch (err) {
+			setMessage("Terjadi error saat login. Silakan coba lagi.");
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center py-5" style={{

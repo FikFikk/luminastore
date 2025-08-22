@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { logout } from "@/services/authService";
 
 export default function Header({showHeader = true} : {showHeader?: boolean}) {
   const [user, setUser] = useState<{
@@ -33,33 +34,17 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
     fetchUser();
   }, []);
 
-  const handleLogout = async () => {
-    const token = Cookies.get("token");
-    if (!token) {
-      alert("Token tidak ditemukan");
-      return;
-    }
+	const handleLogout = async () => {
+		const res = await logout();
+		if (res.ok) {
+			Cookies.remove("token");
+			setUser(null);
+			router.push("/login");
+		} else {
+			alert(res.data.message || "Logout gagal");
+		}
+	};
 
-    try {
-      const res = await fetch("/api/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        Cookies.remove("token");
-        setUser(null);
-        router.push("/login");
-      } else {
-        alert(data.message || "Logout gagal");
-      }
-    } catch (err) {
-      alert("Terjadi error saat logout");
-    }
-  };
 
   return (
     <>
