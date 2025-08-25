@@ -21,10 +21,10 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
     const fetchUser = async () => {
       try {
         const result = await getUser();
-        console.log("🔍 Hasil getUser:", result);
+        // console.log("🔍 Hasil getUser:", result);
         
         if (result.ok && result.data) {
-			console.log("✅ User data ditemukan:", result.data);
+			// console.log("✅ User data ditemukan:", result.data);
 			setUser(result.data);
 		} else {
 			console.log("❌ Gagal mendapatkan user:", result.data.message || "Unknown error");
