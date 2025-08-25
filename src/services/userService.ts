@@ -1,131 +1,85 @@
 import Cookies from "js-cookie";
 
+const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/user`;
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
+
+
+const getAuthHeaders = () => {
+  const token = Cookies.get("token");
+  return {
+    "x-api-key": API_KEY,
+    "Authorization": token ? `Bearer ${token}` : "",
+  };
+};
+
 export interface ApiResponse<T> {
   ok: boolean;
   status: number;
   data: T;
 }
 
-export interface UserResponse {
-  ID?: number;
-  FirstName: string;
-  Surname: string;
-  Email: string;
-  PhoneNumber?: string;
-  Address?: string;
-  ProfilePicture?: string;
-  CreatedAt?: string;
-  UpdatedAt?: string;
-}
-
-export interface UpdateUserResponse {
-  message: string;
-}
-
-//
-// FETCH USER
-//
-export async function fetchUser(): Promise<UserResponse | null> {
+// GET USER
+export const getUser = async (): Promise<ApiResponse<any>> => {
   try {
-    console.log("🔍 fetchUser service dipanggil");
-    
-    const res = await fetch("/api/user", {
+    const res = await fetch(`${API_BASE}`, {
       method: "GET",
       headers: {
-        "Accept": "application/json"
+        ...getAuthHeaders(),
+        "Accept": "application/json",
       },
-      credentials: "include" // biar cookie ikut terkirim
     });
 
-    console.log("📡 Response status:", res.status);
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-      console.error("❌ Failed to fetch user:", res.status, errorData);
-      return null;
-    }
-
     const data = await res.json();
-    console.log("📦 User data received:", data);
-    return data;
+    return { ok: res.ok, status: res.status, data };
   } catch (error) {
-    console.error("❌ Error fetchUser service:", error);
-    return null;
+    return { ok: false, status: 500, data: { message: error instanceof Error ? error.message : "Unknown error" } };
   }
-}
+};
 
-//
-// UPDATE USER PROFILE
-//
-export async function updateUserProfile(payload: {
-  FirstName: string;
-  Surname: string;
-  Email: string;
+// UPDATE PROFILE (TEXT ONLY)
+export const updateUserProfile = async (payload: {
+  FirstName?: string;
+  Surname?: string;
   PhoneNumber?: string;
   Address?: string;
-}): Promise<ApiResponse<UpdateUserResponse>> {
+  Email?: string;
+}): Promise<ApiResponse<any>> => {
   try {
-    console.log("🔄 updateUserProfile service dipanggil", payload);
-    
-    const formData = new FormData();
-    formData.append("FirstName", payload.FirstName);
-    formData.append("Surname", payload.Surname);
-    formData.append("Email", payload.Email);
-    
-    if (payload.PhoneNumber) {
-      formData.append("PhoneNumber", payload.PhoneNumber);
-    }
-    
-    if (payload.Address) {
-      formData.append("Address", payload.Address);
-    }
-
-    const res = await fetch("/api/user", {
-      method: "PUT",
-      credentials: "include", // biar cookie ikut terkirim
-      body: formData,
-    });
-
-    console.log("📡 Update response status:", res.status);
-
-    const data = await res.json();
-    return { ok: res.ok, status: res.status, data };
-  } catch (error) {
-    console.error("❌ Error updateUserProfile service:", error);
-    return { 
-      ok: false, 
-      status: 500, 
-      data: { message: "Network error" } 
-    };
-  }
-}
-
-//
-// UPLOAD PROFILE PICTURE
-//
-export async function uploadProfilePicture(file: File): Promise<ApiResponse<UpdateUserResponse>> {
-  try {
-    console.log("📸 uploadProfilePicture service dipanggil", file.name);
-    
-    const formData = new FormData();
-    formData.append("ProfilePicture", file);
-
-    const res = await fetch("/api/user/profile-picture", {
+    const res = await fetch(`${API_BASE}/update_profile`, {
       method: "POST",
-      credentials: "include", // biar cookie ikut terkirim
-      body: formData,
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
-
-    console.log("📡 Upload response status:", res.status);
 
     const data = await res.json();
     return { ok: res.ok, status: res.status, data };
   } catch (error) {
-    console.error("❌ Error uploadProfilePicture service:", error);
-    return { 
-      ok: false, 
-      status: 500, 
-      data: { message: "Network error" } 
-    };
+    return { ok: false, status: 500, data: { message: error instanceof Error ? error.message : "Unknown error" } };
   }
-}
+};
+
+// UPLOAD PROFILE PICTURE
+export const uploadProfilePicture = async (file: File): Promise<ApiResponse<any>> => {
+  try {
+    const formData = new FormData();
+    formData.append("PhotoProfile", file);
+
+    const res = await fetch(`${API_BASE}/update_profile`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+        // ⚠️ jangan pakai Content-Type, biar FormData otomatis set boundary
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  } catch (error) {
+    return { ok: false, status: 500, data: { message: error instanceof Error ? error.message : "Unknown error" } };
+  }
+};

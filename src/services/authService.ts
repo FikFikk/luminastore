@@ -6,16 +6,16 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export interface ForgotPasswordResponse {
-  message: string;
-}
-
 export interface LoginResponse {
   access_token?: string;
   message: string;
 }
 
 export interface RegisterResponse {
+  message: string;
+}
+
+export interface ForgotPasswordResponse {
   message: string;
 }
 
@@ -26,9 +26,7 @@ export interface SetPasswordResponse {
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/auth`;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
 
-//
 // LOGIN
-//
 export async function login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
   const res = await fetch(`${API_BASE}/login`, {
     method: "POST",
@@ -44,9 +42,7 @@ export async function login(email: string, password: string): Promise<ApiRespons
   return { ok: res.ok, status: res.status, data };
 }
 
-//
 // FORGOT PASSWORD
-//
 export async function forgotPassword(email: string): Promise<ApiResponse<ForgotPasswordResponse>> {
   const res = await fetch(`${API_BASE}/forgot_password`, {
     method: "POST",
@@ -62,16 +58,13 @@ export async function forgotPassword(email: string): Promise<ApiResponse<ForgotP
   return { ok: res.ok, status: res.status, data };
 }
 
-//
 // REGISTER
-// form-data: FirstName, Surname, Email, Password
-//
 export async function register(payload: {
-	FirstName: string;
-	Surname: string;
-	Email: string;
-	Password: string;
-	PhoneNumber?: string;
+  FirstName: string;
+  Surname: string;
+  Email: string;
+  Password: string;
+  PhoneNumber?: string;
 }): Promise<ApiResponse<RegisterResponse>> {
   const formData = new FormData();
   formData.append("FirstName", payload.FirstName);
@@ -84,25 +77,16 @@ export async function register(payload: {
 
   const res = await fetch(`${API_BASE}/register`, {
     method: "POST",
-    headers: {
-      "x-api-key": API_KEY,
-    },
+    headers: { "x-api-key": API_KEY },
     body: formData,
   });
 
   const data = await res.json();
-
-  return {
-    ok: res.ok,
-    status: res.status,
-    data,
-  };
+  return { ok: res.ok, status: res.status, data };
 }
 
-//
 // LOGOUT
-//
-export async function logout() {
+export async function logout(): Promise<ApiResponse<any>> {
   const token = Cookies.get("token");
   if (!token) {
     return { ok: false, status: 401, data: { message: "Token not found" } };
@@ -121,9 +105,7 @@ export async function logout() {
   return { ok: res.ok, status: res.status, data };
 }
 
-//
 // SET PASSWORD
-//
 export async function setPassword(payload: {
   Email: string;
   Timestamp: number;

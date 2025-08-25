@@ -6,6 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { logout } from "@/services/authService";
+import { getUser } from "@/services/userService";
 
 export default function Header({showHeader = true} : {showHeader?: boolean}) {
   const [user, setUser] = useState<{
@@ -19,14 +20,18 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/user");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        } else {
-          setUser(null);
-        }
+        const result = await getUser();
+        console.log("🔍 Hasil getUser:", result);
+        
+        if (result.ok && result.data) {
+			console.log("✅ User data ditemukan:", result.data);
+			setUser(result.data);
+		} else {
+			console.log("❌ Gagal mendapatkan user:", result.data.message || "Unknown error");
+			setUser(null);
+		}
       } catch (err) {
+        console.error("💥 Error saat fetch user:", err);
         setUser(null);
       }
     };
@@ -39,12 +44,11 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
 		if (res.ok) {
 			Cookies.remove("token");
 			setUser(null);
-			router.push("/login");
+			router.push("/auth/login");
 		} else {
 			alert(res.data.message || "Logout gagal");
 		}
 	};
-
 
   return (
     <>
@@ -122,7 +126,7 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
                     </ul>
                   </>
                 ) : (
-                  <Link className="nav-link" href="/login">
+                  <Link className="nav-link" href="/auth/login">
                     <Image
                       src="/assets/images/user.svg"
                       alt="User"
