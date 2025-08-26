@@ -151,13 +151,12 @@ export const getProductBySlug = async (slug: string): Promise<Product> => {
     const response = await fetch(`${API_BASE}/show/${slug}`, {
       method: "GET",
       headers: getAuthHeaders(),
-      mode: 'cors', // Explicitly set CORS mode
+      mode: 'cors',
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Response error:', response.status, errorText);
-      
       if (response.status === 404) {
         throw new Error("Product not found");
       }
@@ -165,20 +164,29 @@ export const getProductBySlug = async (slug: string): Promise<Product> => {
     }
 
     const result = await response.json();
-    
-    // Handle the API response structure
-    if (result.success) {
-      // Remove the success field and return the product data
-      const { success, ...productData } = result;
-      return productData;
-    } else {
-      throw new Error(result.error || 'Unknown API error');
+    console.log("API single product result:", result); // <-- debug
+
+    // Case 1: API balikin { success: true, data: {...} }
+    if (result.success !== undefined) {
+      if (result.success && result.data) {
+        return result.data as Product;
+      } else {
+        throw new Error(result.error || result.message || 'Unknown API error');
+      }
     }
+
+    // Case 2: API langsung balikin object produk { id, title, ... }
+    if (result.id && result.title) {
+      return result as Product;
+    }
+
+    throw new Error("Unexpected API response structure");
   } catch (error) {
     console.error("Error fetching product:", error);
     throw error;
   }
 };
+
 
 /**
  * Search products by title
