@@ -444,50 +444,52 @@ function ProductPage() {
               <div className="row">
                 {products.map((product) => (
                   <div key={product.id} className="col-12 col-md-4 col-lg-3 mb-5">
-                    <Link 
-                      href={`/product/${generateSlug(product.title)}`}
-                      className="product-item text-decoration-none"
-                    >
-                      <img
-                        src={
-                          product.image?.medium ||
-                          product.image?.original ||
-                          "/assets/images/sofa.png"
-                        }
-                        alt={product.title}
-                        className="img-fluid product-thumbnail"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "/assets/images/sofa.png";
-                        }}
-                      />
-                      <h3 className="product-title">{product.title}</h3>
-                      <strong className="product-price">
-                        {formatRupiah(product.price || 0)}
-                      </strong>
-                      
-                      {/* Enhanced Rating display */}
-                      {product.rating && (
-                        <div className="product-rating mt-2">
-                          <div className="d-flex align-items-center gap-1">
-                            <div className="d-flex">
-                              {renderStarRating(product.rating)}
+                    <div className="product-item position-relative">
+                      <Link 
+                        href={`/product/${generateSlug(product.title)}`}
+                        className="text-decoration-none"
+                      >
+                        <img
+                          src={
+                            product.image?.medium ||
+                            product.image?.original ||
+                            "/assets/images/sofa.png"
+                          }
+                          alt={product.title}
+                          className="img-fluid product-thumbnail"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "/assets/images/sofa.png";
+                          }}
+                        />
+                        <h3 className="product-title">{product.title}</h3>
+                        <strong className="product-price">
+                          {formatRupiah(product.price || 0)}
+                        </strong>
+                        
+                        {/* Enhanced Rating display */}
+                        {product.rating && (
+                          <div className="product-rating mt-2">
+                            <div className="d-flex align-items-center gap-1">
+                              <div className="d-flex">
+                                {renderStarRating(product.rating)}
+                              </div>
+                              <span className="ms-2 text-muted" style={{ fontSize: '0.85rem' }}>
+                                ({product.rating.toFixed(1)})
+                              </span>
                             </div>
-                            <span className="ms-2 text-muted" style={{ fontSize: '0.85rem' }}>
-                              ({product.rating.toFixed(1)})
-                            </span>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </Link>
                       
-                      <span className="icon-cross">
+                      {/* <span className="icon-cross">
                         <img
                           src="/assets/images/cross.svg"
                           alt="add"
                           className="img-fluid"
                         />
-                      </span>
-                    </Link>
+                      </span> */}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -656,3 +658,4 @@ function ProductPage() {
 }
 
 export default ProductPage;
+                               

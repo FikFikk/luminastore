@@ -10,7 +10,7 @@ export default function Footer({showHeader = true} : {showHeader?: boolean}) {
       <div className="container relative">
 
         {/* Sofa image */}
-        <div className="sofa-img mb-4">
+        {/* <div className="sofa-img mb-4">
           <Image
             src="/assets/images/sofa.png"
             alt="Sofa"
@@ -18,7 +18,7 @@ export default function Footer({showHeader = true} : {showHeader?: boolean}) {
             height={200}
             className="img-fluid"
           />
-        </div>
+        </div> */}
 
         {/* Newsletter */}
         <div className="row">
