@@ -40,6 +40,11 @@ export interface Product {
   variants?: ProductVariant[];
 }
 
+export interface Category {
+  id: number;
+  title: string;
+}
+
 export interface ProductListParams {
   title?: string;
   deskripsi?: string;
@@ -68,6 +73,52 @@ export interface ApiResponse<T> {
   page?: number;
   limit?: number;
 }
+
+/**
+ * Get list of categories
+ */
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const response = await fetch(`${API_BASE}/categories`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      mode: 'cors',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Categories response error:', response.status, errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log("Categories API result:", result);
+
+    // Case 1: API returns { success: true, data: [...] }
+    if (result.success !== undefined) {
+      if (result.success) {
+        return result.data ?? [];
+      } else {
+        throw new Error(result.error || result.message || 'Unknown API error');
+      }
+    }
+
+    // Case 2: API directly returns array
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    // Case 3: API returns {data: [...]}
+    if (result.data && Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    throw new Error("Unexpected API response structure for categories");
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    throw error;
+  }
+};
 
 /**
  * Get list of products with filtering, sorting, and pagination
@@ -142,7 +193,6 @@ export const getProducts = async (params?: ProductListParams): Promise<ProductLi
   }
 };
 
-
 /**
  * Get single product by slug
  */
@@ -186,7 +236,6 @@ export const getProductBySlug = async (slug: string): Promise<Product> => {
     throw error;
   }
 };
-
 
 /**
  * Search products by title

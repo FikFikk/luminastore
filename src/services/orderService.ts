@@ -50,18 +50,14 @@ export interface OrderAddress {
   Provinsi: string;
 }
 
+// Updated interface to match API structure
 export interface CreateOrderParams {
+  cart_ids: number[];
   address_id: number;
-  shipping_cost: number;
-  shipping_service: string;
   payment_method: string;
+  courier: string;
+  service: string;
   notes?: string;
-  items?: Array<{
-    product_id: number;
-    variant_id?: number;
-    quantity: number;
-    price: number;
-  }>;
 }
 
 export interface OrderListParams {
@@ -124,6 +120,8 @@ export interface ApiResponse<T> {
  */
 export const createOrder = async (params: CreateOrderParams): Promise<PaymentResponse> => {
   try {
+    console.log("Creating order with params:", params);
+    
     const response = await fetch(`${API_BASE}/create_order`, {
       method: "POST",
       headers: getAuthHeaders(),

@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getProducts, Product, ProductListParams } from "@/services/productService";
+import { getProducts, Product, getCategories, Category, ProductListParams } from "@/services/productService";
 import Link from "next/link";
 
 function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -19,8 +21,6 @@ function ProductPage() {
     sort_dir: "ASC",
   });
 
-  // Categories for filter dropdown (you can make this dynamic by fetching from API)
-  const categories = ["Electronic", "Sepatu", "Olahraga", "Lari", "Properti"];
 
   // Format currency to Indonesian Rupiah
   const formatRupiah = (amount: number) => {
@@ -73,6 +73,22 @@ function ProductPage() {
       .trim(); // Remove leading/trailing hyphens
   };
 
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const categoriesData = await getCategories();
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+      // Don't set error state for categories, just log it
+      // Use fallback categories if needed
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   // Fetch products
   const fetchProducts = async (params: ProductListParams = filters) => {
     try {
@@ -94,6 +110,7 @@ function ProductPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   // Handle filter changes
@@ -279,10 +296,15 @@ function ProductPage() {
                           value={filters.category || ''}
                           onChange={(e) => handleFilterChange('category', e.target.value)}
                           style={{ borderRadius: '10px' }}
+                          disabled={loadingCategories}
                         >
-                          <option value="">All Categories</option>
+                          <option value="">
+                            {loadingCategories ? 'Loading categories...' : 'All Categories'}
+                          </option>
                           {categories.map(category => (
-                            <option key={category} value={category}>{category}</option>
+                            <option key={category.id} value={category.title}>
+                              {category.title}
+                            </option>
                           ))}
                         </select>
                       </div>
