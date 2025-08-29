@@ -54,6 +54,7 @@ function CheckoutPage() {
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
   const [paymentMethodsError, setPaymentMethodsError] = useState<string>('');
   const [selectedPaymentCategory, setSelectedPaymentCategory] = useState<string>('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<DuitkuPaymentMethod | null>(null);
 
   // Address state
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -130,7 +131,7 @@ useEffect(() => {
         subDistrictId: targetAddress.SubDistrictID
       });
       
-      const destinationId = targetAddress.SubDistrictID || targetAddress.ID;
+      const destinationId = targetAddress.DistrictID;
       if (!destinationId) {
         throw new Error("ID tujuan pengiriman tidak ditemukan pada alamat yang dipilih");
       }
@@ -409,13 +410,53 @@ useEffect(() => {
     }));
   };
 
+  // Enhanced getTotalAmount to include payment method fee
   const getTotalAmount = () => {
-    return cart.summary.total_price + (selectedShipping?.cost || 0);
+    const baseAmount = cart.summary.total_price + (selectedShipping?.cost || 0);
+    const paymentFee = getSelectedPaymentMethodFee();
+    return baseAmount + paymentFee;
+  };
+
+  // Function to get selected payment method fee
+  const getSelectedPaymentMethodFee = (): number => {
+    if (!paymentMethod || !selectedPaymentMethod) return 0;
+    return Number(selectedPaymentMethod.totalFee) || 0;
+  };
+
+
+  // Function to handle payment method selection with fee tracking
+  const handlePaymentMethodSelect = (methodCode: string, methodData?: DuitkuPaymentMethod) => {
+    setPaymentMethod(methodCode);
+    
+    if (methodCode === "cod") {
+      setSelectedPaymentMethod(null);
+      setSelectedPaymentCategory('');
+    } else if (methodData) {
+      setSelectedPaymentMethod(methodData);
+    }
   };
   
   const handleSelectShipping = (service: ShippingService, courierCode: string) => {
     setSelectedShipping(service);
     setSelectedCourier(courierCode);
+  };
+
+  // Enhanced notes validation and handling
+  const validateNotes = (notes: string): string | null => {
+    if (notes.trim().length > 1000) {
+      return "Catatan terlalu panjang (maksimal 1000 karakter)";
+    }
+    return null;
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setOrderNotes(value);
+    
+    // Clear any previous note-related errors
+    if (error && error.includes('catatan')) {
+      setError("");
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -435,6 +476,14 @@ useEffect(() => {
     return;
   }
 
+  // Validate notes
+  const notesError = validateNotes(orderNotes);
+  if (notesError) {
+    setError(notesError);
+    alert(notesError);
+    return;
+  }
+
   try {
     setIsProcessing(true);
     setError("");
@@ -442,44 +491,65 @@ useEffect(() => {
     // Prepare cart_ids from cart items
     const cart_ids = cart.items.map(item => item.id);
 
-    // Prepare order data according to API structure
+    // Enhanced order data preparation with proper notes handling
     const orderData: CreateOrderParams = {
       cart_ids: cart_ids,
       address_id: selectedAddress.ID,
       payment_method: paymentMethod,
       courier: selectedCourier,
       service: selectedShipping.service_code,
-      notes: orderNotes.trim() || undefined
+      // Always include notes field, even if empty - this ensures it's saved to DB
+      notes: orderNotes.trim()
     };
 
     console.log("Creating order with data:", orderData);
+    console.log("Order notes being sent:", orderData.notes);
 
     // Create order
     const result = await createOrder(orderData);
     
     console.log("Order creation result:", result);
 
-    if (result.success && result.data) {
+    // Check if order creation was successful
+    if (result.success) {
+      // Clear the notes field on successful order creation
+      setOrderNotes("");
+      
       alert("Pesanan berhasil dibuat!");
       
-      // Handle different payment methods
+      // Handle different payment methods based on actual API response structure
       if (paymentMethod === "cod") {
-        window.location.href = `/orders/${result.data.order_id}`;
+        // For COD, redirect to order details page
+        window.location.href = `/orders/${result.order_id}`;
       } else {
-        if (result.data.payment_url) {
-          window.location.href = result.data.payment_url;
-        } else if (result.data.qr_code || result.data.va_number) {
+        // For online payment methods - use actual response structure
+        if (result.paymentUrl) {
+          // If paymentUrl exists, open in new tab
+          window.open(result.paymentUrl, '_blank');
+          // Also redirect to orders page in current tab after a short delay
+          setTimeout(() => {
+            window.location.href = `/orders/${result.order_id}`;
+          }, 1000);
+          
+          // Alternative: Direct redirect (uncomment if you prefer this)
+          // window.location.href = result.paymentUrl;
+          
+        } else if (result.qr_code || result.va_number) {
+          // Show modal for QR code or VA number
           setPaymentModal({
             show: true,
             data: result
           });
         } else {
-          window.location.href = `/orders/${result.data.order_id}`;
+          // Fallback: redirect to order details
+          window.location.href = `/orders/${result.order_id}`;
         }
       }
       
     } else {
-      throw new Error(result.error || result.message || 'Gagal membuat pesanan');
+      // Handle case where success is false
+      const errorMessage = result.error || result.message || 'Pesanan gagal dibuat, silakan coba lagi';
+      throw new Error(errorMessage);
     }
 
   } catch (error: any) {
@@ -487,12 +557,17 @@ useEffect(() => {
     
     let errorMessage = "Gagal membuat pesanan. Silakan coba lagi.";
     
+    // Enhanced error handling
     if (error.message.includes('401')) {
       errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
     } else if (error.message.includes('400')) {
       errorMessage = "Data pesanan tidak valid. Periksa kembali form Anda.";
     } else if (error.message.includes('422')) {
       errorMessage = "Data yang dikirim tidak lengkap atau tidak sesuai format.";
+    } else if (error.message.includes('500')) {
+      errorMessage = "Terjadi kesalahan server. Silakan coba lagi nanti.";
+    } else if (error.message.toLowerCase().includes('notes') || error.message.toLowerCase().includes('catatan')) {
+      errorMessage = `Kesalahan pada catatan pesanan: ${error.message}`;
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -713,7 +788,7 @@ const handleClosePaymentModal = () => {
                   </div>
                 )}
 
-                {/* Payment Method Section */}
+                {/* Enhanced Payment Method Section with Fee Display */}
                 <div className="form-group mb-4">
                   <label className="text-black"><strong>Metode Pembayaran</strong></label>
                   
@@ -748,10 +823,7 @@ const handleClosePaymentModal = () => {
                           id="payment-cod"
                           value="cod"
                           checked={paymentMethod === "cod"}
-                          onChange={(e) => {
-                            setPaymentMethod(e.target.value);
-                            setSelectedPaymentCategory('');
-                          }}
+                          onChange={(e) => handlePaymentMethodSelect(e.target.value)}
                         />
                         <label className="form-check-label" htmlFor="payment-cod">
                           <strong>Bayar di Tempat (COD)</strong>
@@ -780,10 +852,7 @@ const handleClosePaymentModal = () => {
                                       id={inputId}
                                       value={method.paymentMethod}
                                       checked={paymentMethod === method.paymentMethod}
-                                      onChange={(e) => {
-                                        setPaymentMethod(e.target.value);
-                                        setSelectedPaymentCategory(category);
-                                      }}
+                                      onChange={(e) => handlePaymentMethodSelect(e.target.value, method)}
                                     />
                                     <label className="form-check-label d-flex align-items-center" htmlFor={inputId}>
                                       {method.paymentImage && (
@@ -793,7 +862,6 @@ const handleClosePaymentModal = () => {
                                           className="me-2"
                                           style={{ width: '32px', height: '20px', objectFit: 'contain' }}
                                           onError={(e) => {
-                                            // Hide image if it fails to load
                                             (e.target as HTMLImageElement).style.display = 'none';
                                           }}
                                         />
@@ -831,7 +899,7 @@ const handleClosePaymentModal = () => {
                           id="payment-cod-fallback"
                           value="cod"
                           checked={paymentMethod === "cod"}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          onChange={(e) => handlePaymentMethodSelect(e.target.value)}
                         />
                         <label className="form-check-label" htmlFor="payment-cod-fallback">
                           Bayar di Tempat (COD)
@@ -842,94 +910,34 @@ const handleClosePaymentModal = () => {
                   )}
                 </div>
 
-                <div className="form-group row">
-                  <div className="col-md-6">
-                    <label htmlFor="c_fname" className="text-black">
-                      First Name <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="c_fname"
-                      name="firstName"
-                      value={billingForm.firstName}
-                      onChange={handleBillingFormChange}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="c_lname" className="text-black">
-                      Last Name <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="c_lname"
-                      name="lastName"
-                      value={billingForm.lastName}
-                      onChange={handleBillingFormChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group row">
-                  <div className="col-md-12">
-                    <label htmlFor="c_companyname" className="text-black">
-                      Company Name
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="c_companyname"
-                      name="companyName"
-                      value={billingForm.companyName}
-                      onChange={handleBillingFormChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group row">
-                  <div className="col-md-6">
-                    <label htmlFor="c_email_address" className="text-black">
-                      Email Address <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      id="c_email_address"
-                      name="email"
-                      value={billingForm.email}
-                      onChange={handleBillingFormChange}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="c_phone" className="text-black">
-                      Phone <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="c_phone"
-                      name="phone"
-                      placeholder="Phone Number"
-                      value={billingForm.phone}
-                      onChange={handleBillingFormChange}
-                    />
-                  </div>
-                </div>
-
-                {/* Order Notes */}
+                {/* Enhanced Order Notes Section */}
                 <div className="form-group">
                   <label htmlFor="c_order_notes" className="text-black">
-                    Order Notes
+                    <strong>Catatan Pesanan</strong>
                   </label>
                   <textarea
                     name="c_order_notes"
                     id="c_order_notes"
                     className="form-control"
-                    placeholder="Write your notes here..."
+                    placeholder="Tulis catatan khusus untuk pesanan Anda (opsional)..."
                     value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
+                    onChange={handleNotesChange}
+                    rows={4}
+                    maxLength={1000}
                   ></textarea>
+                  <div className="d-flex justify-content-between align-items-center mt-1">
+                    <small className="text-muted">
+                      Catatan akan disimpan dan dapat dilihat oleh penjual
+                    </small>
+                    <small className="text-muted">
+                      {orderNotes.length}/1000 karakter
+                    </small>
+                  </div>
+                  {orderNotes.length > 900 && (
+                    <small className="text-warning">
+                      Mendekati batas maksimal karakter
+                    </small>
+                  )}
                 </div>
               </div>
             </div>
@@ -978,6 +986,14 @@ const handleClosePaymentModal = () => {
                             <td className="text-black">{selectedShipping.cost_formatted}</td>
                           </tr>
                         )}
+                        {getSelectedPaymentMethodFee() > 0 && (
+                          <tr>
+                            <td className="text-black font-weight-bold">
+                              <strong>Biaya Admin Pembayaran</strong>
+                            </td>
+                            <td className="text-black">{formatPrice(getSelectedPaymentMethodFee())}</td>
+                          </tr>
+                        )}
                         
                         <tr>
                           <td className="text-black font-weight-bold">
@@ -1024,14 +1040,14 @@ const handleClosePaymentModal = () => {
                             <div className="modal-body text-center">
                               <div className="alert alert-success">
                                 <h6>Pesanan berhasil dibuat!</h6>
-                                <p className="mb-0">Order ID: {paymentModal.data.data?.order_id}</p>
+                                <p className="mb-0">Order ID: {paymentModal.data.order_id}</p>
                               </div>
 
-                              {paymentModal.data.data?.qr_code && (
+                              {paymentModal.data.qr_code && (
                                 <div className="mb-4">
                                   <h6>Scan QR Code untuk pembayaran:</h6>
                                   <img 
-                                    src={paymentModal.data.data.qr_code} 
+                                    src={paymentModal.data.qr_code} 
                                     alt="QR Code Pembayaran" 
                                     className="img-fluid"
                                     style={{ maxWidth: '300px' }}
@@ -1039,23 +1055,29 @@ const handleClosePaymentModal = () => {
                                 </div>
                               )}
 
-                              {paymentModal.data.data?.va_number && (
+                              {paymentModal.data.va_number && (
                                 <div className="mb-4">
                                   <h6>Nomor Virtual Account:</h6>
                                   <div className="alert alert-info">
-                                    <strong>{paymentModal.data.data.va_number}</strong>
+                                    <strong>{paymentModal.data.va_number}</strong>
                                   </div>
                                 </div>
                               )}
 
                               <div className="mb-3">
-                                <p><strong>Total Pembayaran: {formatPrice(paymentModal.data.data?.amount || 0)}</strong></p>
-                                {paymentModal.data.data?.expired_date && (
+                                <p><strong>Total Pembayaran: {formatPrice(paymentModal.data.total_amount || 0)}</strong></p>
+                                {paymentModal.data.expired_date && (
                                   <p className="text-muted">
-                                    Berlaku hingga: {new Date(paymentModal.data.data.expired_date).toLocaleString('id-ID')}
+                                    Berlaku hingga: {new Date(paymentModal.data.expired_date).toLocaleString('id-ID')}
                                   </p>
                                 )}
                               </div>
+
+                              {paymentModal.data.reference && (
+                                <div className="mb-3">
+                                  <small className="text-muted">Reference: {paymentModal.data.reference}</small>
+                                </div>
+                              )}
                             </div>
                             <div className="modal-footer">
                               <button

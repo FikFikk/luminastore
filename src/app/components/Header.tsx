@@ -108,6 +108,11 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
                         </Link>
                       </li>
                       <li>
+                        <Link className="dropdown-item" href="/orders">
+                          Order
+                        </Link>
+                      </li>
+                      <li>
                         <Link className="dropdown-item" href="/change-password">
                           Change Password
                         </Link>

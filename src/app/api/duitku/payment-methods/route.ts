@@ -7,7 +7,7 @@ interface DuitkuPaymentMethod {
   paymentMethod: string;
   paymentName: string;
   paymentImage: string;
-  totalFee: string;
+  totalFee: string; 
 }
 
 interface DuitkuResponse {

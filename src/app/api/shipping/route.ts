@@ -1,4 +1,4 @@
-// app/api/shipping/route.ts - Fixed version with better error handling and validation
+// app/api/shipping/route.ts - FIXED VERSION with consistent parameter handling
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
@@ -89,8 +89,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const destinationId = searchParams.get("destination_id");
     const weight = searchParams.get("weight");
+    // FIXED: Add couriers parameter for consistency with backend
+    const couriers = searchParams.get("couriers");
 
-    console.log("[Shipping Route] Parameters:", { destinationId, weight });
+    console.log("[Shipping Route] Parameters:", { destinationId, weight, couriers });
 
     if (!destinationId || !weight) {
       return NextResponse.json(
@@ -139,8 +141,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Konfigurasi server tidak lengkap." }, { status: 500 });
     }
 
-    // Use the sanitized values in the URL
-    const backendUrl = `${backendApiUrl}/payment/calculate-shipping?destination_id=${destIdNum}&weight=${clampedWeight}`;
+    // FIXED: Build URL with consistent parameters - include couriers if provided
+    let backendUrl = `${backendApiUrl}/payment/calculate-shipping?destination_id=${destIdNum}&weight=${clampedWeight}`;
+    if (couriers) {
+      backendUrl += `&couriers=${encodeURIComponent(couriers)}`;
+    }
     
     console.log("[Shipping Route] Calling backend URL:", backendUrl);
     
@@ -232,9 +237,9 @@ export async function GET(req: Request) {
       // Parse successful response
       try {
         const data = JSON.parse(responseText);
-        console.log("[Shipping Route] Success - caching response");
+        console.log("[Shipping Route] Success - response data:", JSON.stringify(data, null, 2));
         
-        // Validate response structure
+        // FIXED: Validate response structure - ensure it matches expected format
         if (!data.shipping_options || !Array.isArray(data.shipping_options)) {
           console.warn("[Shipping Route] Invalid response structure:", data);
           return NextResponse.json({
@@ -242,7 +247,7 @@ export async function GET(req: Request) {
           }, { status: 502 });
         }
         
-        // Filter out invalid services (cost = 0 or negative)
+        // FIXED: Filter out invalid services (cost = 0 or negative) - maintain structure
         const filteredData = {
           ...data,
           shipping_options: data.shipping_options
@@ -252,6 +257,9 @@ export async function GET(req: Request) {
             }))
             .filter((courier: { services: string | any[]; }) => courier.services.length > 0)
         };
+        
+        // FIXED: Log final response for debugging consistency
+        console.log("[Shipping Route] Final filtered response:", JSON.stringify(filteredData, null, 2));
         
         // Cache the successful response
         responseCache.set(cacheKey, { data: filteredData, timestamp: Date.now() });
