@@ -67,14 +67,14 @@ export default function OrderDetailPage() {
 
   const getTotalAmount = () => {
     const baseAmount = order.total_price_formatted;
-    const paymentFee = getSelectedPaymentMethodFee();
-    return baseAmount + paymentFee;
+    // const paymentFee = getSelectedPaymentMethodFee();
+    return baseAmount;
   };
   // Function to get selected payment method fee
-  const getSelectedPaymentMethodFee = (): number => {
-    if (!paymentMethod || !selectedPaymentMethod) return 0;
-    return Number(selectedPaymentMethod.totalFee) || 0;
-  };
+  // const getSelectedPaymentMethodFee = (): number => {
+  //   if (!paymentMethod || !selectedPaymentMethod) return 0;
+  //   return Number(selectedPaymentMethod.totalFee) || 0;
+  // };
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!orderDetail?.order) return;
@@ -314,10 +314,10 @@ export default function OrderDetailPage() {
                     <i className="fas fa-calendar-check text-primary" style={{ fontSize: '2rem' }}></i>
                   </div>
                   <h6 className="fw-bold mb-2">Estimasi Pengiriman</h6>
-                  {order.estimated_delivery ? (
+                  {order.etd ? (
                     <span className="badge bg-info text-white px-3 py-2">
                       <i className="fas fa-clock me-1"></i>
-                      {formatDate(order.estimated_delivery)}
+                      {order.etd}
                     </span>
                   ) : (
                     <span className="badge bg-light text-dark px-3 py-2">Belum tersedia</span>
@@ -369,7 +369,7 @@ export default function OrderDetailPage() {
                         <div className="d-flex align-items-center">
                           {item.product_image && (
                             <img
-                              src={"http://localhost:8080"+item.product_image.small}
+                              src={item.product_image.small}
                               alt={item.product_title}
                               className="rounded border me-3"
                               style={{ width: '60px', height: '60px', objectFit: 'cover' }}
@@ -421,7 +421,7 @@ export default function OrderDetailPage() {
                       {/* <i className="fas fa-truck me-1"></i> */}
                       Biaya Admin Pembayaran
                     </span>
-                    <span className="fw-semibold">{formatPrice(getSelectedPaymentMethodFee())}</span>
+                    <span className="fw-semibold">{order.fee_formatted}</span>
                   </div>
                   <hr className="my-2" />
                   <div className="d-flex justify-content-between">
@@ -520,6 +520,7 @@ export default function OrderDetailPage() {
                     <div>
                       <label className="small text-muted mb-0">Kurir Pengiriman</label>
                       <div className="fw-semibold">{order.courier} - {order.service}</div>
+                      <div className="fw-semibold">{order.tracking_number} </div>
                     </div>
                   </div>
                 </div>

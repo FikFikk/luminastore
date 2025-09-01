@@ -92,7 +92,8 @@ export default function OrdersPage() {
       'pending': { class: 'bg-warning text-dark', text: 'Menunggu', icon: 'fas fa-clock' },
       'processing': { class: 'bg-info text-white', text: 'Diproses', icon: 'fas fa-cogs' },
       'shipped': { class: 'bg-primary text-white', text: 'Dikirim', icon: 'fas fa-shipping-fast' },
-      'delivered': { class: 'bg-success text-white', text: 'Terkirim', icon: 'fas fa-check-circle' }
+      'delivered': { class: 'bg-success text-white', text: 'Terkirim', icon: 'fas fa-check-circle' },
+      'cancelled': { class: 'bg-dark text-white', text: 'Dibatalkan', icon: 'fas fa-times-circle' }
     };
     const badge = statusMap[status as keyof typeof statusMap] || { class: 'bg-light text-dark', text: status, icon: 'fas fa-question' };
     
@@ -195,7 +196,7 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <div className="flex-grow-1 ms-3">
-                      <div className="h4 fw-bold mb-0 text-success">{statistics.paid_orders}</div>
+                      <div className="h4 fw-bold mb-0 text-success">{statistics.paid_orders - statistics.delivered_orders}</div>
                       <div className="small text-muted">Sudah Bayar</div>
                     </div>
                   </div>
@@ -386,7 +387,7 @@ export default function OrdersPage() {
                         <div className="d-flex align-items-center bg-light rounded p-3">
                           {order.first_product.image && (
                             <img
-                              src={'http://localhost:8080'+ order.first_product.image.small}
+                              src={order.first_product.image.small}
                               alt={order.first_product.title}
                               className="rounded border"
                               style={{ width: '60px', height: '60px', objectFit: 'cover' }}

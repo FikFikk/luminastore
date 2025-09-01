@@ -83,7 +83,7 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
                 <Link className="nav-link" href="/product">Product</Link>
               </li>
               <li>
-                <Link className="nav-link" href="/contact">Contact us</Link>
+                <Link className="nav-link" href="/orders">Order</Link>
               </li>
             </ul>
 
@@ -105,11 +105,6 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
                       <li>
                         <Link className="dropdown-item" href="/profile">
                           Profile
-                        </Link>
-                      </li>
-                      <li>
-                        <Link className="dropdown-item" href="/orders">
-                          Order
                         </Link>
                       </li>
                       <li>

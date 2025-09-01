@@ -28,16 +28,21 @@ export interface Order {
   total_price_formatted: string;
   courier: string;
   service: string;
+  etd: string | null;                    // ETD mentah dari RajaOngkir
   estimated_delivery: string | null;
+  estimated_delivery_formatted: string | null;
   payment_url: string | null;
   payment_method_code: string;
   payment_method: string;
+  fee: number;
+  fee_formatted: number;
   total_items: number;
   total_quantity: number;
   can_cancel: boolean;
   can_pay: boolean;
   is_paid: boolean;
   is_delivered: boolean;
+  is_delivery_overdue: boolean;
   tracking_number: string | null;
   has_tracking: boolean;
 }
@@ -137,7 +142,6 @@ export interface CreateOrderParams {
   courier: string;
   service: string;
   notes?: string;
-  payment_fee?: number; 
 }
 
 export interface OrderListParams {
@@ -180,6 +184,7 @@ export interface PaymentResponse {
   items_total: number;
   shipping_cost: number;
   total_weight: number;
+  payment_fee: number;
   paymentUrl?: string;
   reference: string;
   message?: string;
