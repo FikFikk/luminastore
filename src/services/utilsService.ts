@@ -1,3 +1,4 @@
+import { IImage } from "@/app/components/inteface/IImage";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/utils`;
@@ -20,12 +21,7 @@ export interface CarouselSlide {
   button_text: string;
   button_link: string;
   sort_order: number;
-  image: {
-    small: string;
-    medium: string;
-    large: string;
-    original: string;
-  };
+  image: IImage;
   created_at: string;
   updated_at: string;
 }
@@ -93,12 +89,7 @@ export interface SiteConfig {
   about: {
     title: string;
     content: string;
-    image: {
-      small: string;
-      medium: string;
-      large: string;
-      original: string;
-    } | null;
+    image: IImage
   };
   features: SiteFeature[];
 }

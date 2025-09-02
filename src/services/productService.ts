@@ -1,3 +1,4 @@
+import { IImage } from "@/app/components/inteface/IImage";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/products`;
@@ -12,19 +13,13 @@ const getAuthHeaders = () => {
   };
 };
 
-export interface ProductImage {
-  original: string;
-  small: string;
-  medium: string;
-}
-
 export interface ProductVariant {
   id: number;
   title: string;
   sku: string;
   price: number;
   stock: number;
-  image: ProductImage | null;
+  image: IImage | null;
 }
 
 export interface Product {
@@ -34,8 +29,8 @@ export interface Product {
   deskripsi: string;
   rating: number;
   price: number;
-  image: ProductImage | null;
-  images: ProductImage[];
+  image: IImage | null;
+  images: IImage[];
   categories: string[];
   variants?: ProductVariant[];
 }

@@ -6,6 +6,10 @@ import "./globals.css"; // kalau kamu punya CSS global
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import ClientLayout from "./ClientLayout";
+import { Provider } from 'react-redux';
+import { store } from '@/store';
+import { Providers } from '@/store/providers';
+import AuthProvider from "@/store/AuthProvider";
 
 const geistSans = Geist({
 variable: "--font-geist-sans",
@@ -48,7 +52,13 @@ return (
 		<link href="/assets/css/style.css" rel="stylesheet" />
 	</head>
 	<body className={`${geistSans.variable} ${geistMono.variable}`}>
-		<ClientLayout>{children}</ClientLayout>
+		<Providers>
+			<AuthProvider>
+				<ClientLayout>
+					{children}
+				</ClientLayout>
+			</AuthProvider>
+		</Providers>
 
 		{/* JS Bootstrap bundle */}
 		<Script src="/assets/js/bootstrap.bundle.min.js" strategy="beforeInteractive" />

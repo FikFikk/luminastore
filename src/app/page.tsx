@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { utilsService, CarouselSlide, Product, SiteConfig } from "@/services/utilsService";
+import { useAppSelector } from "@/hooks/redux";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -12,6 +13,7 @@ export default function Home() {
   const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // const {user} = useAppSelector((state) => state.auth);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function Home() {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Loading your furniture collection...</p>
+        <p className="min-vh-100 d-flex justify-content-center align-items-center">Loading your furniture collection...</p>
       </div>
     );
   }
@@ -126,12 +128,12 @@ export default function Home() {
                           className={`slide ${index === currentSlide ? 'active' : ''}`}
                         >
                           <Image
-                            src={slide.image.large}
+                            src={slide.image.medium}
                             alt={slide.title}
                             width={600}
                             height={400}
                             priority={index === 0}
-                            style={{ objectFit: 'contain' }}
+                            style={{ objectFit: 'cover' }}
                           />
                         </div>
                       ))}
@@ -299,7 +301,7 @@ export default function Home() {
                 }}
               />
 
-              <div className="row my-5">
+              {/* <div className="row my-5">
                 {siteConfig?.features.map((feature, index) => (
                   <div key={index} className="col-6 col-md-6">
                     <div className="feature">
@@ -396,14 +398,14 @@ export default function Home() {
                     </div>
                   </>
                 )}
-              </div>
+              </div> */}
             </div>
 
             <div className="col-lg-5">
               <div className="img-wrap">
                 {siteConfig?.about.image ? (
                   <Image
-                    src={siteConfig.about.image.large}
+                    src={siteConfig.about.image.medium}
                     alt={siteConfig.about.title}
                     className="img-fluid"
                     width={500}
@@ -480,7 +482,7 @@ export default function Home() {
           min-height: 80vh;
           display: flex;
           align-items: center;
-          padding: 2rem 0;
+          padding: 4rem 0;
         }
 
         .hero-container {

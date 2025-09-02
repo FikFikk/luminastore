@@ -2,64 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ReactNode, useEffect, useState } from "react";
-import Cookies from "js-cookie";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux";
+import { logoutUser, setAuthenticated } from "@/store/slices/authSlice";
 import { useRouter } from "next/navigation";
-import { logout } from "@/services/authService";
-import { getUser } from "@/services/userService";
 
-export default function Header({showHeader = true} : {showHeader?: boolean}) {
-  const [user, setUser] = useState<{
-    FirstName: ReactNode;
-    Surname: ReactNode;
-    name?: string;
-  } | null>(null);
-
+export default function Header({ showHeader = true }: { showHeader?: boolean }) {
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const result = await getUser();
-        // console.log("🔍 Hasil getUser:", result);
-        
-        if (result.ok && result.data) {
-			// console.log("✅ User data ditemukan:", result.data);
-			setUser(result.data);
-		} else {
-			console.log("❌ Gagal mendapatkan user:", result.data.message || "Unknown error");
-			setUser(null);
-		}
-      } catch (err) {
-        console.error("💥 Error saat fetch user:", err);
-        setUser(null);
-      }
-    };
+  const handleLogout = async () => {
+    const result = await dispatch(logoutUser());
 
-    fetchUser();
-  }, []);
-
-	const handleLogout = async () => {
-		const res = await logout();
-		if (res.ok) {
-			Cookies.remove("token");
-			setUser(null);
-			router.push("/auth/login");
-		} else {
-			alert(res.data.message || "Logout gagal");
-		}
-	};
+    if (logoutUser.fulfilled.match(result)) {
+      router.push("/auth/login"); // redirect ke login kalau logout sukses
+    }
+  };
 
   return (
     <>
       <nav
         className={'custom-navbar navbar navbar-expand-md navbar-dark bg-dark'}
-        style={{display: !showHeader ? "none" : ""}}
+        style={{ display: !showHeader ? "none" : "" }}
         aria-label="Furni navigation bar"
       >
         <div className="container">
           <Link className="navbar-brand" href="/">
-            Furni<span>.</span>
+            LuminaStore<span>.</span>
           </Link>
 
           <button
@@ -89,7 +58,7 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
 
             <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
               <li className="nav-item dropdown">
-                {user ? (
+                {isAuthenticated && user ? (
                   <>
                     <a
                       className="nav-link dropdown-toggle text-white"
@@ -99,6 +68,9 @@ export default function Header({showHeader = true} : {showHeader?: boolean}) {
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
+                      {isLoading ? (
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      ) : null}
                       Hi, {user.FirstName} {user.Surname}
                     </a>
                     <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">

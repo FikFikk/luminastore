@@ -18,49 +18,32 @@ import {
 } from "@/services/duitkuService";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { getCart, formatPrice, Cart, CartItem } from "@/services/cartService";
-import { 
-  getMemberAddresses, 
-  createMemberAddress, 
-  Address, 
-  CreateAddressParams
-} from "@/services/addressService";
+import { getCart, formatPrice, Cart } from "@/services/cartService";
+import { getMemberAddresses } from "@/services/addressService";
 import { 
   createOrder, 
   CreateOrderParams,
   PaymentResponse 
 } from "@/services/orderService";
-
-interface AddressFormData {
-  title: string;
-  alamat: string;
-  kodepos: string;
-  kecamatan: string;
-  kota: string;
-  provinsi: string;
-  is_default: number;
-  province_id: number;
-  city_id: number;
-  district_id: number;
-  subdistrict_id: number;
-}
+import { IAddress } from "@/app/components/inteface/IAddress";
+import { ICartItem } from "@/app/components/inteface/ICartItem";
+import AddAddress from "@/app/components/modal/AddAddress";
 
 function CheckoutPage() {
   // Cart state - untuk menyimpan semua cart dan filtered selected items
   const [cart, setCart] = useState<Cart>({ items: [], summary: { total_items: 0, total_price: 0, total_weight: 0, items_count: 0 } });
-  const [selectedCartItems, setSelectedCartItems] = useState<CartItem[]>([]);
+  const [selectedCartItems, setSelectedCartItems] = useState<ICartItem[]>([]);
   const [selectedCartIds, setSelectedCartIds] = useState<number[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
 
   const [paymentMethods, setPaymentMethods] = useState<DuitkuPaymentMethodsResponse | null>(null);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
   const [paymentMethodsError, setPaymentMethodsError] = useState<string>('');
-  const [selectedPaymentCategory, setSelectedPaymentCategory] = useState<string>('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<DuitkuPaymentMethod | null>(null);
 
   // Address state
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [addresses, setAddresses] = useState<IAddress[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<IAddress | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   
   // Shipping state with better management
@@ -75,22 +58,6 @@ function CheckoutPage() {
   const retryCountRef = useRef(0);
   const maxRetries = 2;
 
-  // Address form
-  const [addressForm, setAddressForm] = useState<AddressFormData>({
-    title: "",
-    alamat: "",
-    kodepos: "",
-    kecamatan: "",
-    kota: "",
-    provinsi: "",
-    is_default: 0,
-    province_id: 0,
-    city_id: 0,
-    district_id: 0,
-    subdistrict_id: 0,
-  });
-  const [addressLoading, setAddressLoading] = useState(false);
-
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [orderNotes, setOrderNotes] = useState<string>("");
@@ -99,10 +66,6 @@ function CheckoutPage() {
     show: false, 
     data: null 
   });
-
-  // State untuk destination selection
-  const [selected, setSelected] = useState<Destination | null>(null);
-  const [modalSelected, setModalSelected] = useState<Destination | null>(null);
 
   // Error state
   const [error, setError] = useState<string>("");
@@ -330,99 +293,6 @@ function CheckoutPage() {
     await loadShippingOptions();
   }, [loadShippingOptions]);
 
-  // AsyncSelect untuk destination search dengan rate limiting
-  const loadOptions = useCallback(async (inputValue: string): Promise<Destination[]> => {
-    if (!inputValue || inputValue.length < 3) return [];
-    
-    try {
-      const results = await searchDestinations(inputValue);
-      return results;
-    } catch (err: any) {
-      console.error("Load options error:", err);
-      return [];
-    }
-  }, []);
-
-  // Function untuk handle pemilihan destination di modal
-  const handleDestinationSelect = (destination: Destination | null) => {
-    setModalSelected(destination);
-    
-    if (destination) {
-      setAddressForm(prev => ({
-        ...prev,
-        kecamatan: destination.district_name || '',
-        kota: destination.city_name || '',
-        provinsi: destination.province_name || '',
-        kodepos: destination.zip_code || '',
-      }));
-    }
-  };
-
-  // Reset modal form
-  const resetModalForm = () => {
-    setModalSelected(null);
-    setAddressForm({
-      title: "",
-      alamat: "",
-      kodepos: "",
-      kecamatan: "",
-      kota: "",
-      provinsi: "",
-      is_default: 0,
-      province_id: 0,
-      city_id: 0,
-      district_id: 0,
-      subdistrict_id: 0,
-    });
-  };
-
-  const handleCreateAddress = async () => {
-    try {
-      if (!addressForm.title.trim()) {
-        alert("Nama alamat harus diisi");
-        return;
-      }
-      if (!addressForm.alamat.trim()) {
-        alert("Alamat lengkap harus diisi");
-        return;
-      }
-      if (!addressForm.provinsi.trim() || !addressForm.kota.trim() || 
-          !addressForm.kecamatan.trim() || !addressForm.kodepos.trim()) {
-        alert("Provinsi, Kota, Kecamatan, dan Kode Pos harus diisi");
-        return;
-      }
-
-      setAddressLoading(true);
-      
-      const memberId = 1; // TODO: ambil dari token/session
-      
-      const newAddress = await createMemberAddress({
-        member_id: memberId,
-        title: addressForm.title,
-        alamat: addressForm.alamat,
-        kodepos: addressForm.kodepos,
-        kecamatan: addressForm.kecamatan,
-        kota: addressForm.kota,
-        provinsi: addressForm.provinsi,
-        is_default: addressForm.is_default,
-        province_id: 0,
-        city_id: 0,
-        district_id: 0,
-        subdistrict_id: 0,
-      });
-      
-      await loadAddresses();
-      resetModalForm();
-      setShowAddressModal(false);
-      alert("Alamat berhasil ditambahkan");
-    } catch (err) {
-      console.error("Error creating address:", err);
-      alert("Gagal menambah alamat. Silakan coba lagi.");
-    } finally {
-      setAddressLoading(false);
-    }
-  };
-
   // Enhanced getTotalAmount untuk selected items + shipping + payment fee
   const getTotalAmount = () => {
     const baseAmount = selectedTotals.total_price + (selectedShipping?.cost || 0);
@@ -442,7 +312,6 @@ function CheckoutPage() {
     
     if (methodCode === "cod") {
       setSelectedPaymentMethod(null);
-      setSelectedPaymentCategory('');
     } else if (methodData) {
       setSelectedPaymentMethod(methodData);
     }
@@ -468,6 +337,14 @@ function CheckoutPage() {
     if (error && error.includes('catatan')) {
       setError("");
     }
+  };
+
+  // Handle address modal success callback
+  const handleAddressModalSuccess = (message?: string) => {
+    if (message) {
+      alert(message);
+    }
+    loadAddresses(); // Reload addresses after successful creation
   };
 
   const handlePlaceOrder = async () => {
@@ -703,7 +580,7 @@ function CheckoutPage() {
                   </button>
                 </div>
 
-                {/* Enhanced Shipping Options Section - Using selectedTotals.total_weight */}
+                {/* Enhanced Shipping Options Section */}
                 {selectedAddress && (
                   <div className="form-group mb-4">
                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -1025,164 +902,12 @@ function CheckoutPage() {
         </div>
       </div>
 
-      {/* Enhanced Add Address Modal */}
-      {showAddressModal && (
-        <div className="modal fade show d-block" tabIndex={-1}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Tambah Alamat Baru</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => {
-                    setShowAddressModal(false);
-                    resetModalForm();
-                  }}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">Nama Alamat <span className="text-danger">*</span></label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={addressForm.title}
-                    onChange={(e) => setAddressForm({ ...addressForm, title: e.target.value })}
-                    placeholder="Rumah, Kantor, dll"
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Cari Lokasi</label>
-                  <AsyncSelect
-                    cacheOptions
-                    defaultOptions={false}
-                    loadOptions={loadOptions}
-                    value={modalSelected}
-                    onChange={handleDestinationSelect}
-                    placeholder="Ketik minimal 3 karakter untuk mencari..."
-                    isClearable
-                    noOptionsMessage={({ inputValue }) => 
-                      inputValue.length < 3 
-                        ? "Ketik minimal 3 karakter" 
-                        : "Tidak ada hasil ditemukan"
-                    }
-                    loadingMessage={() => "Mencari..."}
-                    styles={{
-                      control: (base) => ({
-                        ...base,
-                        minHeight: '38px'
-                      })
-                    }}
-                  />
-                  <small className="text-muted">
-                    Pilih lokasi untuk otomatis mengisi provinsi, kota, kecamatan, dan kode pos
-                  </small>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Alamat Lengkap <span className="text-danger">*</span></label>
-                  <textarea
-                    className="form-control"
-                    value={addressForm.alamat}
-                    onChange={(e) => setAddressForm({ ...addressForm, alamat: e.target.value })}
-                    placeholder="Jalan, Nomor Rumah, RT/RW, dll"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Provinsi <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addressForm.provinsi}
-                      onChange={(e) => setAddressForm({ ...addressForm, provinsi: e.target.value })}
-                      readOnly={!!modalSelected}
-                      style={{ backgroundColor: modalSelected ? '#f8f9fa' : 'white' }}
-                    />
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Kota <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addressForm.kota}
-                      onChange={(e) => setAddressForm({ ...addressForm, kota: e.target.value })}
-                      readOnly={!!modalSelected}
-                      style={{ backgroundColor: modalSelected ? '#f8f9fa' : 'white' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Kecamatan <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addressForm.kecamatan}
-                      onChange={(e) => setAddressForm({ ...addressForm, kecamatan: e.target.value })}
-                      readOnly={!!modalSelected}
-                      style={{ backgroundColor: modalSelected ? '#f8f9fa' : 'white' }}
-                    />
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Kode Pos <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addressForm.kodepos}
-                      onChange={(e) => setAddressForm({ ...addressForm, kodepos: e.target.value })}
-                      readOnly={!!modalSelected}
-                      style={{ backgroundColor: modalSelected ? '#f8f9fa' : 'white' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    checked={addressForm.is_default === 1}
-                    onChange={(e) => setAddressForm({ ...addressForm, is_default: e.target.checked ? 1 : 0 })}
-                  />
-                  <label className="form-check-label">Jadikan alamat default</label>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    setShowAddressModal(false);
-                    resetModalForm();
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleCreateAddress}
-                  disabled={addressLoading}
-                >
-                  {addressLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                      Menyimpan...
-                    </>
-                  ) : (
-                    "Simpan Alamat"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Use the AddAddressModal component */}
+      <AddAddress
+        show={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSuccess={handleAddressModalSuccess}
+      />
 
       {/* Enhanced Payment Modal */}
       {paymentModal.show && paymentModal.data && (

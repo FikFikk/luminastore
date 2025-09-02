@@ -1,3 +1,4 @@
+import { ICartItem } from "@/app/components/inteface/ICartItem";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/cart`;
@@ -12,21 +13,6 @@ const getAuthHeaders = () => {
   };
 };
 
-export interface CartItem {
-  id: number;
-  product_id: number;
-  product_title: string;
-  variant_id: number;
-  variant_title: string;
-  quantity: number;
-  price: number;
-  total_price: number;
-  weight?: number;
-  total_weight?: number;
-  available_stock?: number;
-  insufficient_stock?: boolean;
-}
-
 export interface CartSummary {
   total_items: number;
   total_price: number;
@@ -35,7 +21,7 @@ export interface CartSummary {
 }
 
 export interface Cart {
-  items: CartItem[];
+  items: ICartItem[];
   summary: CartSummary;
 }
 
@@ -54,15 +40,15 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
-  cart_item?: CartItem;
-  items?: CartItem[];
+  cart_item?: ICartItem;
+  items?: ICartItem[];
   summary?: CartSummary;
 }
 
 /**
  * Add item to cart
  */
-export const addToCart = async (params: AddToCartParams): Promise<CartItem> => {
+export const addToCart = async (params: AddToCartParams): Promise<ICartItem> => {
   try {
     const response = await fetch(`${API_BASE}/add_to_cart`, {
       method: "POST",
@@ -77,7 +63,7 @@ export const addToCart = async (params: AddToCartParams): Promise<CartItem> => {
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<CartItem> = await response.json();
+    const result: ApiResponse<ICartItem> = await response.json();
     console.log("Add to cart result:", result);
 
     if (result.success && result.cart_item) {
@@ -133,7 +119,7 @@ export const getCart = async (): Promise<Cart> => {
 /**
  * Update cart item quantity
  */
-export const updateCartItem = async (cartId: number, params: UpdateCartParams): Promise<CartItem> => {
+export const updateCartItem = async (cartId: number, params: UpdateCartParams): Promise<ICartItem> => {
   try {
     const response = await fetch(`${API_BASE}/update_cart_item/${cartId}`, {
       method: "POST",
@@ -148,7 +134,7 @@ export const updateCartItem = async (cartId: number, params: UpdateCartParams): 
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<CartItem> = await response.json();
+    const result: ApiResponse<ICartItem> = await response.json();
     console.log("Update cart item result:", result);
 
     if (result.success && result.cart_item) {

@@ -1,3 +1,5 @@
+import { IAddress } from "@/app/components/inteface/IAddress";
+import { IAddressParams } from "@/app/components/inteface/IAddressParams";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/address`;
@@ -12,54 +14,19 @@ const getAuthHeaders = () => {
   };
 };
 
-
-export interface Address {
-  ID: number;
-  ClassName: string;
-  RecordClassName: string;
-  Title: string;
-  Alamat: string;
-  KodePos: string;
-  Kecamatan: string;
-  Kota: string;
-  Provinsi: string;
-  IsDefault: number;
-  MemberID: number;
-  ProvinceID: number;
-  CityID: number;
-  DistrictID: number;
-  SubDistrictID: number;
-  Created: string;
-  LastEdited: string;
-}
-
-export interface CreateAddressParams {
-  member_id: number;
-  title: string;
-  alamat: string;
-  kodepos: string;
-  kecamatan: string;
-  kota: string;
-  provinsi: string;
-  is_default: number;
-  province_id: number;
-  city_id: number;
-  district_id: number;
-  subdistrict_id: number;
-}
-
 export interface ApiResponse<T> {
+  ok?: boolean; 
   success?: boolean;
   message?: string;
   data?: T;
   error?: string;
-  addresses?: Address[];
+  addresses?: IAddress[];
 }
 
 /**
  * Get member addresses
  */
-export const getMemberAddresses = async (): Promise<Address[]> => {
+export const getMemberAddresses = async (): Promise<IAddress[]> => {
   try {
     const response = await fetch(`${API_BASE}/getMemberAddresses`, {
       method: "GET",
@@ -73,7 +40,7 @@ export const getMemberAddresses = async (): Promise<Address[]> => {
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<Address[]> = await response.json();
+    const result: ApiResponse<IAddress[]> = await response.json();
     console.log("Get addresses result:", result);
 
     return result.addresses || result.data || [];
@@ -86,7 +53,7 @@ export const getMemberAddresses = async (): Promise<Address[]> => {
 /**
  * Create new address with RajaOngkir IDs
  */
-export const createMemberAddress = async (params: CreateAddressParams): Promise<Address> => {
+export const createMemberAddress = async (params: IAddressParams): Promise<IAddress> => {
   try {
     console.log("Creating address with params:", params);
 
@@ -103,7 +70,7 @@ export const createMemberAddress = async (params: CreateAddressParams): Promise<
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<Address> = await response.json();
+    const result: ApiResponse<IAddress> = await response.json();
     console.log("Create address result:", result);
 
     if (result.data) {
@@ -117,14 +84,87 @@ export const createMemberAddress = async (params: CreateAddressParams): Promise<
   }
 };
 
+/**
+ * Set default address
+ * PUT /api/addresses/{id}/set-default
+ */
+export const setDefaultAddress = async (addressId: number): Promise<ApiResponse<IAddress>> => {
+  try {
+    console.log("Setting default address:", addressId);
 
+    const response = await fetch(`${API_BASE}/setDefaultAddress/${addressId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      mode: 'cors',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Set default response error:', response.status, errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const result: ApiResponse<IAddress> = await response.json();
+    console.log("Set default address result:", result);
+
+    return {
+      ...result,
+      ok: result.success || false
+    };
+  } catch (error) {
+    console.error("Error setting default address:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete address
+ * DELETE /api/addresses/{id}
+ */
+export const deleteAddress = async (addressId: number): Promise<ApiResponse<any>> => {
+  try {
+    console.log("Deleting address:", addressId);
+
+    const response = await fetch(`${API_BASE}/deleteMemberAddress/${addressId}`, {
+      method: "DELETE",
+      headers: {
+        "x-api-key": API_KEY,
+        "Authorization": Cookies.get("token") ? `Bearer ${Cookies.get("token")}` : "",
+      },
+      mode: 'cors',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Delete response error:', response.status, errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    console.log("Delete address result:", result);
+
+    return {
+      ...result,
+      ok: result.success || false,
+    };
+  } catch (error) {
+    console.error("Error deleting address:", error);
+    throw error;
+  }
+};
 
 /**
  * Update address
+ * PUT /api/addresses/{id}
  */
-export const updateAddress = async (addressId: number, params: Partial<CreateAddressParams>): Promise<Address> => {
+export const updateAddress = async (
+  addressId: number,
+  params: IAddressParams
+): Promise<ApiResponse<IAddress>> => {
   try {
-    const response = await fetch(`${API_BASE}/updateAddress/${addressId}`, {
+    console.log("Updating address:", addressId, "with params:", params);
+
+    const response = await fetch(`${API_BASE}/updateMemberAddress/${addressId}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(params),
@@ -133,49 +173,19 @@ export const updateAddress = async (addressId: number, params: Partial<CreateAdd
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Response error:', response.status, errorText);
+      console.error('Update response error:', response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<Address> = await response.json();
+    const result: ApiResponse<IAddress> = await response.json();
     console.log("Update address result:", result);
 
-    if (result.data) {
-      return result.data;
-    } else {
-      throw new Error(result.error || result.message || 'Failed to update address');
-    }
+    return {
+      ...result,              // spread biar semua field dari API tetap ada
+      ok: result.success || false,
+    };
   } catch (error) {
     console.error("Error updating address:", error);
-    throw error;
-  }
-};
-
-/**
- * Delete address
- */
-export const deleteAddress = async (addressId: number): Promise<void> => {
-  try {
-    const response = await fetch(`${API_BASE}/deleteAddress/${addressId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-      mode: 'cors',
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Response error:', response.status, errorText);
-      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-    }
-
-    const result: ApiResponse<void> = await response.json();
-    console.log("Delete address result:", result);
-
-    if (result.success === false) {
-      throw new Error(result.error || result.message || 'Failed to delete address');
-    }
-  } catch (error) {
-    console.error("Error deleting address:", error);
     throw error;
   }
 };

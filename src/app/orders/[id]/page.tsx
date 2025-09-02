@@ -428,6 +428,18 @@ export default function OrderDetailPage() {
                     <span className="h6 fw-bold">Total:</span>
                     <span className="h5 fw-bold text-success">{getTotalAmount()}</span>
                   </div>
+                  {order.can_pay && order.payment_url && (
+                  <a
+                    href={order.payment_url ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-success btn-sm"
+                  >
+                    <i className="fas fa-credit-card me-1"></i>
+                    Bayar
+                  </a>
+                  )}
+
                 </div>
               </div>
             </div>
