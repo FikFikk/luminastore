@@ -7,10 +7,10 @@ import {
   removeCartItem, 
   clearCart,
   formatPrice,
-  CartItem,
   Cart 
 } from "@/services/cartService";
 import { getProducts } from "@/services/productService";
+import { Shimmer } from "react-shimmer";
 
 function CartPage() {
   const [cart, setCart] = useState<Cart>({ items: [], summary: { total_items: 0, total_price: 0, total_weight: 0, items_count: 0 } });
@@ -297,29 +297,59 @@ function CartPage() {
                                 />
                               </div>
                             </td>
+
                             <td className="product-thumbnail">
-                              <img
-                                src={productsData[item.product_id] || '/assets/images/sofa.png'}
-                                alt={item.product_title}
-                                className="img-fluid"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/assets/images/sofa.png';
-                                }}
-                                style={{ maxWidth: '80px', maxHeight: '80px', objectFit: 'cover' }}
-                              />
-                            </td>
-                            <td className="product-name">
-                              <h2 className="h5 text-black">{item.product_title}</h2>
-                              {item.variant_title && item.variant_title !== item.product_title && (
-                                <small className="text-muted d-block">{item.variant_title}</small>
+                              {productsData[item.product_id] ? (
+                                <img
+                                  src={productsData[item.product_id]}
+                                  alt={item.product_title}
+                                  className="img-fluid"
+                                  style={{ maxWidth: '80px', maxHeight: '80px', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <Shimmer width={80} height={80} />
                               )}
+                            </td>
+
+                            <td className="product-name">
+                              <h2 className="h5 text-black">
+                                {item.product_title ? (
+                                  item.product_title
+                                ) : (
+                                  <Shimmer width={120} height={18} />
+                                )}
+                              </h2>
+
+                              {item.variant_title && item.variant_title !== item.product_title ? (
+                                <small className="text-muted d-block">{item.variant_title}</small>
+                              ) : (
+                                <Shimmer width={100} height={14} />
+                              )}
+
                               {item.insufficient_stock && (
                                 <small className="text-danger d-block">
                                   Low stock! Only {item.available_stock} available
                                 </small>
                               )}
                             </td>
-                            <td>{formatPrice(item.price)}</td>
+
+                            <td>
+                              {item.price ? (
+                                formatPrice(item.price)
+                              ) : (
+                                <Shimmer width={60} height={16} />
+                              )}
+                            </td>
+
+                            <td>
+                              {item.total_price ? (
+                                formatPrice(item.total_price)
+                              ) : (
+                                <Shimmer width={70} height={16} />
+                              )}
+                            </td>
+
+
                             <td>
                               <div
                                 className="input-group mb-3 d-flex align-items-center quantity-container"
@@ -358,7 +388,15 @@ function CartPage() {
                                 </div>
                               )}
                             </td>
-                            <td>{formatPrice(item.total_price)}</td>
+
+                            <td>
+                              {item.total_price ? (
+                                formatPrice(item.total_price)
+                              ) : (
+                                <Shimmer width={70} height={16} />
+                              )}
+                            </td>
+
                             <td>
                               <button
                                 className="btn btn-black btn-sm"
@@ -371,6 +409,7 @@ function CartPage() {
                           </tr>
                         ))}
                       </tbody>
+
                     </table>
                   </div>
                 </div>

@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { utilsService, CarouselSlide, Product, SiteConfig } from "@/services/utilsService";
-import { useAppSelector } from "@/hooks/redux";
+import { Image, Shimmer } from "react-shimmer";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -66,6 +65,8 @@ export default function Home() {
     setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
   };
 
+  const CShimmer = Image as any;
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -127,14 +128,19 @@ export default function Home() {
                           key={slide.id} 
                           className={`slide ${index === currentSlide ? 'active' : ''}`}
                         >
-                          <Image
-                            src={slide.image.medium}
-                            alt={slide.title}
-                            width={600}
-                            height={400}
-                            priority={index === 0}
-                            style={{ objectFit: 'cover' }}
-                          />
+                          <div style={{ width: 600, height: 400, position: 'relative' }}>
+                            <Shimmer width={600} height={400} />
+                            <img
+                              src={slide.image.medium}
+                              alt={slide.title}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+                              onLoad={(e) => {
+                                const target = e.target as HTMLImageElement; // cast here
+                                const shimmer = target.previousElementSibling as HTMLElement | null;
+                                if (shimmer) shimmer.style.display = 'none';
+                              }}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -159,13 +165,26 @@ export default function Home() {
                           className={`dot ${index === currentSlide ? 'active' : ''}`}
                           onClick={() => goToSlide(index)}
                         >
-                          <Image
-                            src={slide.image.small}
-                            alt={slide.title}
-                            width={50}
-                            height={50}
-                            style={{ objectFit: 'cover' }}
-                          />
+                          <div style={{ width: 50, height: 50, position: 'relative' }}>
+                            <Shimmer width={50} height={50} />
+                            <img
+                              src={slide.image.small}
+                              alt={slide.title}
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0
+                              }}
+                              onLoad={(e) => {
+                                const target = e.target as HTMLImageElement; // cast here
+                                const shimmer = target.previousElementSibling as HTMLElement | null;
+                                if (shimmer) shimmer.style.display = 'none';
+                              }}
+                            />
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -196,13 +215,26 @@ export default function Home() {
                   <a href={`/product/${product.slug}`} className="product-link">
                     <div className="product-image">
                       {product.image ? (
-                        <Image
-                          src={product.image.medium}
-                          alt={product.title}
-                          width={280}
-                          height={280}
-                          style={{ objectFit: 'cover' }}
-                        />
+                        <div style={{ width: 280, height: 280, position: 'relative' }}>
+                          <Shimmer width={280} height={280} />
+                          <img
+                            src={product.image.medium}
+                            alt={product.title}
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'cover',
+                              position: 'absolute',
+                              top: 0,
+                              left: 0
+                            }}
+                            onLoad={(e) => {
+                                const target = e.target as HTMLImageElement; // cast here
+                                const shimmer = target.previousElementSibling as HTMLElement | null;
+                                if (shimmer) shimmer.style.display = 'none';
+                              }}
+                          />
+                        </div>
                       ) : (
                         <div className="image-placeholder">No Image</div>
                       )}
@@ -246,13 +278,26 @@ export default function Home() {
                 <div key={product.id} className="popular-card">
                   <div className="popular-image">
                     {product.image ? (
-                      <Image
-                        src={product.image.medium}
-                        alt={product.title}
-                        width={120}
-                        height={120}
-                        style={{ objectFit: 'cover' }}
-                      />
+                      <div style={{ width: 120, height: 120, position: 'relative' }}>
+                        <Shimmer width={120} height={120} />
+                        <img
+                          src={product.image.medium}
+                          alt={product.title}
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0
+                          }}
+                          onLoad={(e) => {
+                        const target = e.target as HTMLImageElement; // cast here
+                        const shimmer = target.previousElementSibling as HTMLElement | null;
+                        if (shimmer) shimmer.style.display = 'none';
+                      }}
+                        />
+                      </div>
                     ) : (
                       <div className="image-placeholder-small">No Image</div>
                     )}
@@ -300,127 +345,52 @@ export default function Home() {
                     "Donec vitae odio quis nisl dapibus malesuada. Nullam ac aliquet velit. Aliquam vulputate velit imperdiet dolor tempor tristique."
                 }}
               />
-
-              {/* <div className="row my-5">
-                {siteConfig?.features.map((feature, index) => (
-                  <div key={index} className="col-6 col-md-6">
-                    <div className="feature">
-                      <div className="icon">
-                        <Image
-                          src={feature.icon}
-                          alt={feature.title}
-                          width={40}
-                          height={40}
-                          className="img-fluid"
-                        />
-                      </div>
-                      <h3>{feature.title}</h3>
-                      <p>{feature.description}</p>
-                    </div>
-                  </div>
-                )) || (
-                  // Fallback features if site config is not available
-                  <>
-                    <div className="col-6 col-md-6">
-                      <div className="feature">
-                        <div className="icon">
-                          <Image
-                            src="/assets/images/truck.svg"
-                            alt="Fast & Free Shipping"
-                            width={40}
-                            height={40}
-                            className="img-fluid"
-                          />
-                        </div>
-                        <h3>Fast & Free Shipping</h3>
-                        <p>
-                          Donec vitae odio quis nisl dapibus malesuada. Nullam ac
-                          aliquet velit.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6 col-md-6">
-                      <div className="feature">
-                        <div className="icon">
-                          <Image
-                            src="/assets/images/bag.svg"
-                            alt="Easy to Shop"
-                            width={40}
-                            height={40}
-                            className="img-fluid"
-                          />
-                        </div>
-                        <h3>Easy to Shop</h3>
-                        <p>
-                          Donec vitae odio quis nisl dapibus malesuada. Nullam ac
-                          aliquet velit.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6 col-md-6">
-                      <div className="feature">
-                        <div className="icon">
-                          <Image
-                            src="/assets/images/support.svg"
-                            alt="24/7 Support"
-                            width={40}
-                            height={40}
-                            className="img-fluid"
-                          />
-                        </div>
-                        <h3>24/7 Support</h3>
-                        <p>
-                          Donec vitae odio quis nisl dapibus malesuada. Nullam ac
-                          aliquet velit.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6 col-md-6">
-                      <div className="feature">
-                        <div className="icon">
-                          <Image
-                            src="/assets/images/return.svg"
-                            alt="Hassle Free Returns"
-                            width={40}
-                            height={40}
-                            className="img-fluid"
-                          />
-                        </div>
-                        <h3>Hassle Free Returns</h3>
-                        <p>
-                          Donec vitae odio quis nisl dapibus malesuada. Nullam ac
-                          aliquet velit.
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div> */}
             </div>
 
             <div className="col-lg-5">
               <div className="img-wrap">
                 {siteConfig?.about.image ? (
-                  <Image
-                    src={siteConfig.about.image.medium}
-                    alt={siteConfig.about.title}
-                    className="img-fluid"
-                    width={500}
-                    height={400}
-                    style={{ objectFit: 'cover' }}
-                  />
+                  <div style={{ width: 500, height: 400, position: 'relative' }}>
+                    <Shimmer width={500} height={400} />
+                    <img
+                      src={siteConfig.about.image.medium}
+                      alt={siteConfig.about.title}
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0
+                      }}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement; // cast here
+                        const shimmer = target.previousElementSibling as HTMLElement | null;
+                        if (shimmer) shimmer.style.display = 'none';
+                      }}
+                    />
+                  </div>
                 ) : (
-                  <Image
-                    src="/assets/images/why-choose-us-img.jpg"
-                    alt="Why Choose Us"
-                    className="img-fluid"
-                    width={500}
-                    height={400}
-                    style={{ objectFit: 'cover' }}
-                  />
+                  <div style={{ width: 500, height: 400, position: 'relative' }}>
+                    <Shimmer width={500} height={400} />
+                    <img
+                      src="/assets/images/why-choose-us-img.jpg"
+                      alt="Why Choose Us"
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0
+                      }}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement; // cast here
+                        const shimmer = target.previousElementSibling as HTMLElement | null;
+                        if (shimmer) shimmer.style.display = 'none';
+                      }}
+                    />
+                  </div>
                 )}
               </div>
             </div>

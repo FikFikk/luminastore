@@ -10,13 +10,14 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
-    "react-redux": "^9.0.4",
     "bootstrap": "^5.3.7",
     "js-cookie": "^3.0.5",
     "next": "15.4.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-select": "^5.10.2"
+    "react-redux": "^9.0.4",
+    "react-select": "^5.10.2",
+    "react-shimmer": "^3.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

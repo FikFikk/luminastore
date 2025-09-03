@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Image, Shimmer } from "react-shimmer";
+
 import { 
   getOrderList, 
   formatOrderStatus, 
@@ -348,8 +350,10 @@ export default function OrdersPage() {
               </div>
 
               <div className="card-body p-0">
-                {orders.map((order, index) => (
+              {orders.length > 0 ? (
+                orders.map((order, index) => (
                   <div key={order.id} className={`p-4 ${index !== orders.length - 1 ? 'border-bottom' : ''} order-item`}>
+                    
                     {/* Order Header */}
                     <div className="row align-items-center mb-3">
                       <div className="col-md-6">
@@ -362,21 +366,30 @@ export default function OrdersPage() {
                               href={`/orders/${order.id}`}
                               className="h6 mb-0 text-decoration-none fw-bold order-link"
                             >
-                              #{order.reference}
+                              {order.reference === undefined ? (
+                                <Shimmer width={100} height={20} />
+                              ) : order.reference ? (
+                                order.reference
+                              ) : (
+                                "-"
+                              )}
                             </Link>
+
                             <div className="small text-muted">
                               <i className="fas fa-calendar-alt me-1"></i>
-                              {formatDate(order.created_at)}
+                              {order.created_at ? formatDate(order.created_at) : <Shimmer width={80} height={14} />}
                             </div>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="col-md-6 text-md-end mt-2 mt-md-0">
-                        <div className="h5 fw-bold text-success mb-1">{order.total_price_formatted}</div>
+                        <div className="h5 fw-bold text-success mb-1">
+                          {order.total_price_formatted || <Shimmer width={60} height={24} />}
+                        </div>
                         <div className="small text-muted">
                           <i className="fas fa-box me-1"></i>
-                          {order.total_items} item
+                          {order.total_items != null ? `${order.total_items} item` : <Shimmer width={40} height={14} />}
                         </div>
                       </div>
                     </div>
@@ -385,21 +398,37 @@ export default function OrdersPage() {
                     <div className="row align-items-center mb-3">
                       <div className="col-12">
                         <div className="d-flex align-items-center bg-light rounded p-3">
-                          {order.first_product.image && (
-                            <img
-                              src={order.first_product.image.small}
-                              alt={order.first_product.title}
-                              className="rounded border"
-                              style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                            />
+                          
+                          {order.first_product.image ? (
+                            <div style={{ width: 60, height: 60, position: 'relative' }}>
+                              <Shimmer width={60} height={60} />
+                              <img
+                                src={order.first_product.image.small}
+                                alt={order.first_product.title}
+                                className="rounded border"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+                                onLoad={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  const shimmer = target.previousElementSibling as HTMLElement | null;
+                                  if (shimmer) shimmer.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <Shimmer width={60} height={60} />
                           )}
+
                           <div className="flex-grow-1 ms-3">
-                            <h6 className="mb-1 fw-semibold">{order.first_product.title}</h6>
-                            {order.total_items > 1 && (
+                            <h6 className="mb-1 fw-semibold">
+                              {order.first_product.title || <Shimmer width={120} height={18} />}
+                            </h6>
+                            {order.total_items > 1 ? (
                               <p className="small text-muted mb-0">
                                 <i className="fas fa-plus me-1"></i>
                                 dan {order.total_items - 1} item lainnya
                               </p>
+                            ) : (
+                              !order.total_items && <Shimmer width={100} height={14} />
                             )}
                           </div>
                         </div>
@@ -412,15 +441,14 @@ export default function OrdersPage() {
                         <div className="d-flex gap-2 flex-wrap">
                           <div className="d-flex align-items-center">
                             <small className="text-muted me-2">Pembayaran:</small>
-                            {getPaymentStatusBadge(order.payment_status)}
+                            {order.payment_status ? getPaymentStatusBadge(order.payment_status) : <Shimmer width={80} height={20} />}
                           </div>
                           <div className="d-flex align-items-center">
                             <small className="text-muted me-2">Pengiriman:</small>
-                            {getShippingStatusBadge(order.shipping_status)}
+                            {order.shipping_status ? getShippingStatusBadge(order.shipping_status) : <Shimmer width={80} height={20} />}
                           </div>
                         </div>
                       </div>
-                      
                       <div className="col-md-4 text-md-end mt-2 mt-md-0">
                         <div className="btn-group" role="group">
                           {order.can_pay && order.payment_url && (
@@ -434,11 +462,7 @@ export default function OrdersPage() {
                               Bayar
                             </a>
                           )}
-                          
-                          <Link
-                            href={`/orders/${order.id}`}
-                            className="btn btn-outline-primary btn-sm"
-                          >
+                          <Link href={`/orders/${order.id}`} className="btn btn-outline-primary btn-sm">
                             <i className="fas fa-eye me-1"></i>
                             Detail
                           </Link>
@@ -452,29 +476,40 @@ export default function OrdersPage() {
                         <div className="d-flex justify-content-between align-items-center text-small bg-white border rounded p-3">
                           <div className="d-flex align-items-center text-muted">
                             <i className="fas fa-truck me-2"></i>
-                            <span>Kurir: <strong>{order.courier}</strong> - {order.service}</span>
+                            {order.courier ? (
+                              <span>Kurir: <strong>{order.courier}</strong> - {order.service}</span>
+                            ) : (
+                              <Shimmer width={120} height={14} />
+                            )}
                           </div>
-                          
+
                           <div className="d-flex gap-3">
-                            {order.tracking_number && (
+                            {/* {order.tracking_number ? (
                               <span className="badge bg-info text-white">
                                 <i className="fas fa-barcode me-1"></i>
                                 Resi: {order.tracking_number}
                               </span>
+                            ) : (
+                              <Shimmer width={80} height={20} />
                             )}
-                            
-                            {order.estimated_delivery && (
+
+                            {order.estimated_delivery ? (
                               <small className="text-muted">
                                 <i className="fas fa-calendar-check me-1"></i>
                                 Estimasi: {formatDate(order.estimated_delivery)}
                               </small>
-                            )}
+                            ) : (
+                              <Shimmer width={100} height={14} />
+                            )} */}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                ))
+              ) : (
+                <p>Tidak ada order tersedia</p>
+              )}
               </div>
 
               {/* Pagination */}

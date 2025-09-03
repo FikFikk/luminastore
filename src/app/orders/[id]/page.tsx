@@ -30,6 +30,7 @@ import {
   DuitkuPaymentMethod
 } from "@/services/duitkuService";
 import { formatPrice } from '@/services/cartService';
+import { Shimmer } from 'react-shimmer';
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -348,7 +349,7 @@ export default function OrderDetailPage() {
           <div className="card-header bg-white py-3">
             <h5 className="card-title mb-0">
               <i className="fas fa-box text-primary me-2"></i>
-              Item Pesanan ({order.total_items})
+              Item Pesanan ({order.total_items ?? <Shimmer width={30} height={20} />})
             </h5>
           </div>
           <div className="card-body p-0">
@@ -363,40 +364,66 @@ export default function OrderDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, index) => (
-                    <tr key={item.id}>
-                      <td className="ps-4 py-3">
-                        <div className="d-flex align-items-center">
-                          {item.product_image && (
-                            <img
-                              src={item.product_image.small}
-                              alt={item.product_title}
-                              className="rounded border me-3"
-                              style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                            />
-                          )}
-                          <div>
-                            <h6 className="mb-1 fw-semibold">{item.product_title}</h6>
-                            {item.variant_title && (
-                              <small className="text-muted">
-                                <i className="fas fa-tag me-1"></i>
-                                Varian: {item.variant_title}
-                              </small>
+                  {items.length > 0 ? (
+                    items.map((item) => (
+                      <tr key={item.id}>
+                        <td className="ps-4 py-3">
+                          <div className="d-flex align-items-center">
+                            {item.product_image ? (
+                              <div style={{ width: 60, height: 60, position: 'relative' }}>
+                                <Shimmer width={60} height={60} />
+                                <img
+                                  src={item.product_image.small}
+                                  alt={item.product_title}
+                                  className="rounded border me-3"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+                                  onLoad={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    const shimmer = target.previousElementSibling as HTMLElement | null;
+                                    if (shimmer) shimmer.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <Shimmer width={60} height={60} />
                             )}
+                            <div>
+                              <h6 className="mb-1 fw-semibold">
+                                {item.product_title || <Shimmer width={120} height={18} />}
+                              </h6>
+                              {item.variant_title ? (
+                                <small className="text-muted">
+                                  <i className="fas fa-tag me-1"></i>
+                                  Varian: {item.variant_title}
+                                </small>
+                              ) : (
+                                <Shimmer width={80} height={14} />
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="text-center py-3">
-                        <span className="badge bg-primary">{item.quantity}</span>
-                      </td>
-                      <td className="text-end py-3">
-                        <span className="fw-semibold">{item.price_formatted}</span>
-                      </td>
-                      <td className="text-end py-3 pe-4">
-                        <span className="fw-bold text-success">{item.subtotal_formatted}</span>
+                        </td>
+                        <td className="text-center py-3">
+                          {item.quantity != null ? (
+                            <span className="badge bg-primary">{item.quantity}</span>
+                          ) : (
+                            <Shimmer width={30} height={20} />
+                          )}
+                        </td>
+                        <td className="text-end py-3">
+                          {item.price_formatted || <Shimmer width={60} height={18} />}
+                        </td>
+                        <td className="text-end py-3 pe-4">
+                          {item.subtotal_formatted || <Shimmer width={60} height={18} />}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4}>
+                        <Shimmer width={100} height={40} />
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -406,45 +433,44 @@ export default function OrderDetailPage() {
               <div className="row justify-content-end">
                 <div className="col-md-4">
                   <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Subtotal ({order.total_quantity} item):</span>
-                    <span className="fw-semibold">{order.subtotal_formatted}</span>
+                    <span className="text-muted">Subtotal ({order.total_quantity ?? <Shimmer width={30} height={14} />} item):</span>
+                    <span className="fw-semibold">{order.subtotal_formatted || <Shimmer width={60} height={18} />}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted">
                       <i className="fas fa-truck me-1"></i>
                       Ongkos Kirim:
                     </span>
-                    <span className="fw-semibold">{order.shipping_cost_formatted}</span>
+                    <span className="fw-semibold">{order.shipping_cost_formatted || <Shimmer width={60} height={18} />}</span>
                   </div>
                   <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">
-                      {/* <i className="fas fa-truck me-1"></i> */}
-                      Biaya Admin Pembayaran
-                    </span>
-                    <span className="fw-semibold">{order.fee_formatted}</span>
+                    <span className="text-muted">Biaya Admin Pembayaran</span>
+                    <span className="fw-semibold">{order.fee_formatted || <Shimmer width={60} height={18} />}</span>
                   </div>
                   <hr className="my-2" />
                   <div className="d-flex justify-content-between">
                     <span className="h6 fw-bold">Total:</span>
-                    <span className="h5 fw-bold text-success">{getTotalAmount()}</span>
+                    <span className="h5 fw-bold text-success">{getTotalAmount() || <Shimmer width={80} height={20} />}</span>
                   </div>
-                  {order.can_pay && order.payment_url && (
-                  <a
-                    href={order.payment_url ?? "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-success btn-sm"
-                  >
-                    <i className="fas fa-credit-card me-1"></i>
-                    Bayar
-                  </a>
-                  )}
 
+                  {/* Bayar Button */}
+                  {order.can_pay && order.payment_url && (
+                    <a
+                      href={order.payment_url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-success btn-sm mt-2"
+                    >
+                      <i className="fas fa-credit-card me-1"></i>
+                      Bayar
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
 
         <div className="row g-4">
           {/* Customer Information */}
@@ -465,7 +491,9 @@ export default function OrderDetailPage() {
                       </div>
                       <div>
                         <label className="small text-muted mb-0">Nama Lengkap</label>
-                        <div className="fw-semibold">{customer.name}</div>
+                        <div className="fw-semibold">
+                          {customer?.name || <Shimmer width={120} height={16} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -477,7 +505,9 @@ export default function OrderDetailPage() {
                       </div>
                       <div>
                         <label className="small text-muted mb-0">Email</label>
-                        <div className="fw-semibold">{customer.email}</div>
+                        <div className="fw-semibold">
+                          {customer?.email || <Shimmer width={180} height={16} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -490,7 +520,9 @@ export default function OrderDetailPage() {
                         </div>
                         <div>
                           <label className="small text-muted mb-0">Nomor Telepon</label>
-                          <div className="fw-semibold">{customer.phone}</div>
+                          <div className="fw-semibold">
+                            {customer?.phone || <Shimmer width={140} height={16} />}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -518,7 +550,9 @@ export default function OrderDetailPage() {
                     </div>
                     <div>
                       <label className="small text-muted mb-0">Metode Pembayaran</label>
-                      <div className="fw-semibold">{order.payment_method_code}</div>
+                      <div className="fw-semibold">
+                        {order?.payment_method_code || <Shimmer width={100} height={16} />}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -531,8 +565,19 @@ export default function OrderDetailPage() {
                     </div>
                     <div>
                       <label className="small text-muted mb-0">Kurir Pengiriman</label>
-                      <div className="fw-semibold">{order.courier} - {order.service}</div>
-                      <div className="fw-semibold">{order.tracking_number} </div>
+                      <div className="fw-semibold">
+                        {order?.courier ? `${order.courier} - ${order.service}` : <Shimmer width={160} height={16} />}
+                      </div>
+                      <div className="fw-semibold">
+                        {order?.tracking_number === undefined ? (
+                          <Shimmer width={140} height={16} />
+                        ) : order?.tracking_number ? (
+                          order.tracking_number
+                        ) : (
+                          "-"
+                        )}
+                      </div>
+
                     </div>
                   </div>
                 </div>
@@ -545,9 +590,19 @@ export default function OrderDetailPage() {
                       Alamat Pengiriman
                     </h6>
                     <div className="ps-4">
-                      <div className="fw-semibold text-dark">{shipping_address.recipient_name}</div>
-                      <div className="text-muted small mb-2">{shipping_address.phone_number}</div>
-                      <div className="text-muted small">{shipping_address.full_address}</div>
+                      {shipping_address ? (
+                        <>
+                          <div className="fw-semibold text-dark">{shipping_address.recipient_name}</div>
+                          <div className="text-muted small mb-2">{shipping_address.phone_number}</div>
+                          <div className="text-muted small">{shipping_address.full_address}</div>
+                        </>
+                      ) : (
+                        <>
+                          <Shimmer width={120} height={16} />
+                          <Shimmer width={100} height={14} />
+                          <Shimmer width={80} height={14} />
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProductBySlug, Product } from "@/services/productService";
 import { addToCart } from "@/services/cartService";
+import { Image, Shimmer } from 'react-shimmer'
 
 function ProductDetailPage() {
   const params = useParams();
@@ -18,7 +19,7 @@ function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
-
+  const CShimmer = Image as any;
   // Format currency to Indonesian Rupiah
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -302,15 +303,19 @@ function ProductDetailPage() {
                     <div className="product-detail-images position-sticky" style={{ top: '20px' }}>
                       {/* Main Image */}
                       <div className="main-image mb-3 position-relative">
-                        <div className="image-container" style={{ 
-                          borderRadius: '15px', 
-                          overflow: 'hidden',
-                          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                          padding: '20px'
+                        <div className="image-container" style={{
+                          width: "100%",
+                          height: "450px",
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          cursor: "zoom-in",
+                          transition: "transform 0.3s ease",
                         }}>
-                          <img
-                            src={selectedImage || "/assets/images/sofa.png"}
-                            alt={product.title}
+                          <CShimmer
+                            src={
+                              selectedImage ||
+                              "/assets/images/sofa.png"
+                            }
                             className="img-fluid"
                             style={{ 
                               width: '100%', 
@@ -320,15 +325,7 @@ function ProductDetailPage() {
                               transition: 'transform 0.3s ease',
                               cursor: 'zoom-in'
                             }}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/assets/images/sofa.png";
-                            }}
-                            onMouseEnter={(e) => {
-                              (e.target as HTMLImageElement).style.transform = 'scale(1.05)';
-                            }}
-                            onMouseLeave={(e) => {
-                              (e.target as HTMLImageElement).style.transform = 'scale(1)';
-                            }}
+                            fallback={<Shimmer width={307} height={450} className="img-fluid" />}
                           />
                         </div>
                         
@@ -353,6 +350,8 @@ function ProductDetailPage() {
                                   style={{
                                     borderRadius: '8px',
                                     overflow: 'hidden',
+                                    width: "100%",
+                                    height: "80px",
                                     cursor: 'pointer',
                                     transition: 'all 0.3s ease',
                                     border: selectedImage === image.original ? '3px solid #0d6efd' : '2px solid transparent',
@@ -360,18 +359,15 @@ function ProductDetailPage() {
                                   }}
                                   onClick={() => setSelectedImage(image.original)}
                                 >
-                                  <img
+                                  <CShimmer
                                     src={image.small || image.medium || image.original}
-                                    alt={`${product.title} ${index + 1}`}
-                                    className="img-fluid"
                                     style={{ 
                                       width: '100%', 
                                       height: '80px', 
-                                      objectFit: 'cover'
+                                      objectFit: 'cover',
+                                      display: 'block',
                                     }}
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = "/assets/images/sofa.png";
-                                    }}
+                                    fallback={<Shimmer width={100} height={80} />}
                                   />
                                 </div>
                               </div>

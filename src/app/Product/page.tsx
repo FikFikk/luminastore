@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getProducts, Product, getCategories, Category, ProductListParams } from "@/services/productService";
 import Link from "next/link";
+import { Image, Shimmer } from 'react-shimmer'
 
 function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,6 +21,15 @@ function ProductPage() {
     sort_field: "Title",
     sort_dir: "ASC",
   });
+  const CShimmer = Image as any;
+  const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
+
+  const handleImageLoad = (productId: number) => {
+    setImageLoadStates(prev => ({
+      ...prev,
+      [productId]: true
+    }));
+  };
 
 
   // Format currency to Indonesian Rupiah
@@ -149,31 +159,34 @@ function ProductPage() {
   };
 
   // Generate pagination numbers with ellipsis
-  const getPaginationNumbers = () => {
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-      range.push(i);
+  const getPaginationNumbers = (): (number | string)[] => {
+  const delta = 2;
+  const pages = new Set<number>(); // Properly typed Set for numbers only
+  
+  // Always include first page
+  if (totalPages >= 1) pages.add(1);
+  
+  // Add pages around current page
+  for (let i = Math.max(1, currentPage - delta); i <= Math.min(totalPages, currentPage + delta); i++) {
+    pages.add(i);
+  }
+  
+  // Always include last page
+  if (totalPages > 1) pages.add(totalPages);
+  
+  // Convert to sorted array and add ellipsis
+  const sortedPages: number[] = Array.from(pages).sort((a, b) => a - b);
+  const result: (number | string)[] = [];
+  
+  for (let i = 0; i < sortedPages.length; i++) {
+    if (i > 0 && sortedPages[i] - sortedPages[i - 1] > 1) {
+      result.push('...');
     }
-
-    if (currentPage - delta > 2) {
-      rangeWithDots.push(1, '...');
-    } else {
-      rangeWithDots.push(1);
-    }
-
-    rangeWithDots.push(...range);
-
-    if (currentPage + delta < totalPages - 1) {
-      rangeWithDots.push('...', totalPages);
-    } else {
-      if (totalPages > 1) rangeWithDots.push(totalPages);
-    }
-
-    return rangeWithDots;
-  };
+    result.push(sortedPages[i]);
+  }
+  
+  return result;
+};
 
   return (
     <div>
@@ -464,57 +477,98 @@ function ProductPage() {
           ) : (
             <>
               <div className="row">
-                {products.map((product) => (
-                  <div key={product.id} className="col-12 col-md-4 col-lg-3 mb-5">
+              {products.map((product, index) => {
+                const isImageLoaded = imageLoadStates[product.id] ?? false;
+                return (
+                  <div key={`product-${product.id}-${index}`} className="col-12 col-md-4 col-lg-3 mb-5">
                     <div className="product-item position-relative">
                       <Link 
                         href={`/product/${generateSlug(product.title)}`}
                         className="text-decoration-none"
                       >
-                        <img
+                        {/* Jika masih loading, tampilkan semua shimmer */}
+                        {!isImageLoaded && (
+                          <div className="shimmer-container">
+                            {/* Image shimmer */}
+                            <Shimmer width={307} height={300} />
+                            
+                            {/* Title shimmer */}
+                            <div className="mt-3">
+                              <Shimmer width={307} height={24} />
+                            </div>
+                            
+                            {/* Price shimmer */}
+                            <div className="mt-2">
+                              <Shimmer width={307} height={20} />
+                            </div>
+                            
+                            {/* Rating shimmer */}
+                            <div className="mt-2">
+                              <Shimmer width={307} height={18} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Jika sudah loaded, tampilkan content asli */}
+                        {isImageLoaded && (
+                          <div className="content-container">
+                            {/* Image */}
+                            <CShimmer
+                              src={
+                                product.image?.medium ||
+                                product.image?.original ||
+                                "/assets/images/sofa.png"
+                              }
+                              fallback={<Shimmer width={307} height={300} />}
+                            />
+
+                            {/* Title */}
+                            {product.title && (
+                              <h3 className="product-title mt-3">{product.title}</h3>
+                            )}
+
+                            {/* Price */}
+                            {product.price && (
+                              <strong className="product-price d-block mt-2">
+                                {formatRupiah(product.price)}
+                              </strong>
+                            )}
+
+                            {/* Rating */}
+                            {product.rating && (
+                              <div className="product-rating mt-2">
+                                <div className="d-flex align-items-center gap-1">
+                                  <div className="d-flex">
+                                    {renderStarRating(product.rating)}
+                                  </div>
+                                  <span className="ms-2 text-muted" style={{ fontSize: '0.85rem' }}>
+                                    ({product.rating.toFixed(1)})
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Hidden image untuk trigger onLoad - ini yang mengontrol state */}
+                        <img 
                           src={
                             product.image?.medium ||
                             product.image?.original ||
                             "/assets/images/sofa.png"
                           }
-                          alt={product.title}
-                          className="img-fluid product-thumbnail"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "/assets/images/sofa.png";
-                          }}
+                          alt=""
+                          style={{ display: 'none' }}
+                          onLoad={() => handleImageLoad(product.id)}
+                          onError={() => handleImageLoad(product.id)} // Handle error juga
                         />
-                        <h3 className="product-title">{product.title}</h3>
-                        <strong className="product-price">
-                          {formatRupiah(product.price || 0)}
-                        </strong>
-                        
-                        {/* Enhanced Rating display */}
-                        {product.rating && (
-                          <div className="product-rating mt-2">
-                            <div className="d-flex align-items-center gap-1">
-                              <div className="d-flex">
-                                {renderStarRating(product.rating)}
-                              </div>
-                              <span className="ms-2 text-muted" style={{ fontSize: '0.85rem' }}>
-                                ({product.rating.toFixed(1)})
-                              </span>
-                            </div>
-                          </div>
-                        )}
                       </Link>
-                      
-                      {/* <span className="icon-cross">
-                        <img
-                          src="/assets/images/cross.svg"
-                          alt="add"
-                          className="img-fluid"
-                        />
-                      </span> */}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+  
 
               {/* Enhanced Pagination */}
               {totalPages > 1 && (

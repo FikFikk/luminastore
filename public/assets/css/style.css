@@ -321,7 +321,7 @@ a.more {
   right: 0;
   position: absolute;
   content: "";
-  background: #dce5e4;
+  /* background: #dce5e4; */
   height: 0%;
   z-index: -1;
   border-radius: 10px;
@@ -505,7 +505,7 @@ a.more {
   content: "";
   position: absolute;
   border-radius: 20px;
-  background: #dce5e4;
+  /* background: #dce5e4; */
   width: 98px;
   height: 98px;
   top: 50%;
@@ -767,7 +767,7 @@ a.more {
   text-align: center;
   line-height: 40px;
   display: inline-block;
-  background: #dce5e4;
+  /* background: #dce5e4; */
   color: #3b5d50;
   border-radius: 50%;
 }

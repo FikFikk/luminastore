@@ -25,15 +25,13 @@ export async function GET(req: Request) {
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
     }
 
     const data = await response.json();
-    console.log("RajaOngkir API Response:", data); // Debug log
-    
     return NextResponse.json(data);
+    
   } catch (err: any) {
-    console.error("RajaOngkir API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
