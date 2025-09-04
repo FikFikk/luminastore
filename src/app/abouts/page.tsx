@@ -1,3 +1,5 @@
+"use client";
+
 import utilsService, { SiteConfig } from '@/services/utilsService';
 import React, { useEffect, useState } from 'react'
 import { Shimmer } from 'react-shimmer';
