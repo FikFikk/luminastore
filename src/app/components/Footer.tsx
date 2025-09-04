@@ -1,8 +1,66 @@
 "use client";
 
+import utilsService, { SiteConfig } from "@/services/utilsService";
 import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+  
 
 export default function Footer({showHeader = true} : {showHeader?: boolean}) {
+
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [configData] = await Promise.all([
+          utilsService.getSiteConfig(),
+        ]);
+
+        setSiteConfig(configData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p className="min-vh-100 d-flex justify-content-center align-items-center">Loading your furniture collection...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <div className="error-card">
+          <h3>Oops! Something went wrong</h3>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()} className="retry-btn">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+ const content = siteConfig?.about?.content ?? "-";
+
+  // Batasi ke 150 karakter
+  const limit = 150;
+  const isLong = content.length > limit;
+  const preview = isLong ? content.substring(0, limit) + "..." : content;
   return (
     <footer className="footer-section bg-light pt-5"
     style={{display: !showHeader ? "none" : ""}}
@@ -21,7 +79,7 @@ export default function Footer({showHeader = true} : {showHeader?: boolean}) {
         </div> */}
 
         {/* Newsletter */}
-        <div className="row">
+        {/* <div className="row">
           <div className="col-lg-8">
             <div className="subscription-form mb-5">
               <h3 className="d-flex align-items-center">
@@ -59,75 +117,32 @@ export default function Footer({showHeader = true} : {showHeader?: boolean}) {
               </form>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Footer main */}
         <div className="row g-5 mb-5">
           <div className="col-lg-4">
             <div className="mb-4 footer-logo-wrap">
               <a href="#" className="footer-logo">
-                Furni<span>.</span>
+                 {siteConfig?.site_name || "LuminaStore"}
               </a>
             </div>
             <p className="mb-4">
-              Donec facilisis quam ut purus rutrum lobortis. Donec vitae odio
-              quis nisl dapibus malesuada. Nullam ac aliquet velit.
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: preview,
+                }}
+              />
+              {isLong && (
+                <Link href="/abouts" className="text-primary fw-semibold">
+                  Lihat selengkapnya
+                </Link>
+              )}
             </p>
-
-            <ul className="list-unstyled custom-social d-flex gap-3">
-              <li>
-                <a href="#"><span className="fa fa-facebook-f"></span></a>
-              </li>
-              <li>
-                <a href="#"><span className="fa fa-twitter"></span></a>
-              </li>
-              <li>
-                <a href="#"><span className="fa fa-instagram"></span></a>
-              </li>
-              <li>
-                <a href="#"><span className="fa fa-linkedin"></span></a>
-              </li>
-            </ul>
+            
           </div>
 
-          {/* Links */}
-          <div className="col-lg-8">
-            <div className="row links-wrap">
-              <div className="col-6 col-sm-6 col-md-3">
-                <ul className="list-unstyled">
-                  <li><a href="#">About us</a></li>
-                  <li><a href="#">Services</a></li>
-                  <li><a href="#">Blog</a></li>
-                  <li><a href="#">Contact us</a></li>
-                </ul>
-              </div>
-
-              <div className="col-6 col-sm-6 col-md-3">
-                <ul className="list-unstyled">
-                  <li><a href="#">Support</a></li>
-                  <li><a href="#">Knowledge base</a></li>
-                  <li><a href="#">Live chat</a></li>
-                </ul>
-              </div>
-
-              <div className="col-6 col-sm-6 col-md-3">
-                <ul className="list-unstyled">
-                  <li><a href="#">Jobs</a></li>
-                  <li><a href="#">Our team</a></li>
-                  <li><a href="#">Leadership</a></li>
-                  <li><a href="#">Privacy Policy</a></li>
-                </ul>
-              </div>
-
-              <div className="col-6 col-sm-6 col-md-3">
-                <ul className="list-unstyled">
-                  <li><a href="#">Nordic Chair</a></li>
-                  <li><a href="#">Kruzo Aero</a></li>
-                  <li><a href="#">Ergonomic Chair</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          
         </div>
 
         {/* Copyright */}
@@ -136,9 +151,8 @@ export default function Footer({showHeader = true} : {showHeader?: boolean}) {
             <div className="col-lg-6">
               <p className="mb-2 text-center text-lg-start">
                 Copyright &copy; {new Date().getFullYear()}.
-                All Rights Reserved. &mdash; Designed with love by{" "}
-                <a href="https://untree.co">Untree.co</a> Distributed By{" "}
-                <a href="https://themewagon.com">ThemeWagon</a>
+                All Rights Reserved. &mdash; 
+                <a href="">{siteConfig?.site_name}</a>
               </p>
             </div>
 
