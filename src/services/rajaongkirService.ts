@@ -265,10 +265,10 @@ async function performShippingRequest(
         errorMessage = 'Layanan pengiriman sedang dalam pemeliharaan. Silakan coba lagi nanti.';
       }
       
-      const error = new Error(errorMessage);
-      // Add property to distinguish user vs system errors
-      (error as any).isUserError = isUserError;
+      const error = new Error(errorMessage) as Error & { isUserError: boolean };
+      error.isUserError = isUserError;
       throw error;
+
     }
 
     const data = await res.json();
@@ -278,27 +278,33 @@ async function performShippingRequest(
     
     // Validate that we have meaningful results
     if (result.length === 0) {
-      const error = new Error('Tidak ada opsi pengiriman yang tersedia untuk alamat tujuan ini. Silakan pilih alamat lain atau hubungi customer service.');
-      (error as any).isUserError = true;
+      const error = new Error(
+        "Tidak ada opsi pengiriman yang tersedia untuk alamat tujuan ini. Silakan pilih alamat lain atau hubungi customer service."
+      ) as Error & { isUserError: boolean };
+      
+      error.isUserError = true;
       throw error;
     }
-    
+
     // Cache the result
     shippingCache.set(cacheKey, { data: result, timestamp: Date.now() });
-    
     return result;
 
-  } catch (error: any) {
-    console.error("Error getting shipping options:", error);
-    
-    // Re-throw with original message if it's already formatted
-    if (error.message && !error.message.includes('Failed to fetch')) {
-      throw error;
+    } catch (error: unknown) {
+      console.error("Error getting shipping options:", error);
+
+      if (error instanceof Error) {
+        // sudah punya pesan valid → lempar lagi
+        if (error.message && !error.message.includes("Failed to fetch")) {
+          throw error;
+        }
+      }
+
+      // fallback untuk error tak dikenal
+      throw new Error(
+        "Tidak dapat terhubung ke layanan pengiriman. Periksa koneksi internet dan coba lagi."
+      );
     }
-    
-    // Generic fallback for network or unexpected errors
-    throw new Error('Tidak dapat terhubung ke layanan pengiriman. Periksa koneksi internet dan coba lagi.');
-  }
 }
 
 // Utility function to clear caches (useful for debugging or manual refresh)
@@ -310,10 +316,16 @@ export const clearCaches = () => {
 };
 
 // Utility function to check if error is user-correctable
-export const isUserCorrectableError = (error: any): boolean => {
-  return error?.isUserError === true || 
-         error?.message?.includes('alamat') ||
-         error?.message?.includes('tujuan') ||
-         error?.message?.includes('tidak valid') ||
-         error?.message?.includes('tidak didukung');
+export const isUserCorrectableError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+
+  const e = error as { isUserError?: boolean; message?: string };
+
+  return (
+    !!e.isUserError || // pastikan boolean
+    !!e.message?.includes("alamat") ||
+    !!e.message?.includes("tujuan") ||
+    !!e.message?.includes("tidak valid") ||
+    !!e.message?.includes("tidak didukung")
+  );
 };

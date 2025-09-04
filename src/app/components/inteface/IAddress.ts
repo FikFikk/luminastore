@@ -19,5 +19,5 @@ export interface IAddress {
   Created: string;
   LastEdited: string;
   length: number;
-  map(arg0: (addr: any) => JSX.Element): import("react").ReactNode;
+  map(arg0: (addr: unknown) => JSX.Element): import("react").ReactNode;
 }

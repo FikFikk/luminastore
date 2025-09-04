@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { utilsService, CarouselSlide, Product, SiteConfig } from "@/services/utilsService";
-import { Image, Shimmer } from "react-shimmer";
+import { Shimmer } from "react-shimmer";
+import Link from "next/link";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -65,8 +66,6 @@ export default function Home() {
     setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
   };
 
-  const CShimmer = Image as any;
-
   if (loading) {
     return (
       <div className="loading-container">
@@ -105,16 +104,19 @@ export default function Home() {
               <p className="hero-description">
                 {currentSlideData?.description || siteConfig?.tagline || "Discover premium furniture designed for modern living"}
               </p>
-              <div className="hero-buttons">
-                <a 
+              <div className="hero-buttons flex gap-3 mt-4">
+                <Link 
                   href={currentSlideData?.button_link || "#"} 
-                  className="btn-primary"
+                  className="btn btn-primary px-4 py-2 rounded-lg"
                 >
                   {currentSlideData?.button_text || "Shop Now"}
-                </a>
-                <a href="/product" className="btn-secondary">
+                </Link>
+                <Link 
+                  href="/product" 
+                  className="btn btn-outline-light px-4 py-2 rounded-lg"
+                >
                   Explore Collection
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -259,7 +261,7 @@ export default function Home() {
           </div>
           
           <div className="section-footer">
-            <a href="/product" className="view-all-btn">View All Products</a>
+            <Link href="/product" className="view-all-btn">View All Products</Link>
           </div>
         </div>
       </section>

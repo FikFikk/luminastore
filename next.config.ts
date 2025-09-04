@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
           hostname: "localhost",
           port: "8080",
           pathname: "/assets/**"
+        },
+        {
+          protocol: "https",
+          hostname: "admin-fikri-shop.jasamobileapp.com",
+          port: "",
+          pathname: "/assets/**"
         }
     ]
   }

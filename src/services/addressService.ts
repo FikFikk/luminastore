@@ -121,7 +121,7 @@ export const setDefaultAddress = async (addressId: number): Promise<ApiResponse<
  * Delete address
  * DELETE /api/addresses/{id}
  */
-export const deleteAddress = async (addressId: number): Promise<ApiResponse<any>> => {
+export const deleteAddress = async (addressId: number): Promise<ApiResponse<null>> => {
   try {
     console.log("Deleting address:", addressId);
 
@@ -131,16 +131,16 @@ export const deleteAddress = async (addressId: number): Promise<ApiResponse<any>
         "x-api-key": API_KEY,
         "Authorization": Cookies.get("token") ? `Bearer ${Cookies.get("token")}` : "",
       },
-      mode: 'cors',
+      mode: "cors",
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Delete response error:', response.status, errorText);
+      console.error("Delete response error:", response.status, errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<null> = await response.json();
     console.log("Delete address result:", result);
 
     return {
@@ -152,6 +152,7 @@ export const deleteAddress = async (addressId: number): Promise<ApiResponse<any>
     throw error;
   }
 };
+
 
 /**
  * Update address

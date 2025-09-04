@@ -11,6 +11,12 @@ export interface LoginResponse {
   message: string;
 }
 
+type LogoutResponse = {
+  success: boolean;
+  message: string;
+};
+
+
 export interface RegisterResponse {
   message: string;
 }
@@ -86,10 +92,14 @@ export async function register(payload: {
 }
 
 // LOGOUT
-export async function logout(): Promise<ApiResponse<any>> {
+export async function logout(): Promise<ApiResponse<LogoutResponse>> {
   const token = Cookies.get("token");
   if (!token) {
-    return { ok: false, status: 401, data: { message: "Token not found" } };
+    return { 
+      ok: false, 
+      status: 401, 
+      data: { success: false, message: "Token not found" } 
+    };
   }
 
   const res = await fetch(`${API_BASE}/logout`, {
@@ -101,9 +111,11 @@ export async function logout(): Promise<ApiResponse<any>> {
     },
   });
 
-  const data = await res.json();
+  const data: LogoutResponse = await res.json();
+
   return { ok: res.ok, status: res.status, data };
 }
+
 
 // SET PASSWORD
 export async function setPassword(payload: {

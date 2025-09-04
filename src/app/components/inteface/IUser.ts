@@ -7,6 +7,7 @@ export interface IUser {
   FirstName: string;
   Surname: string;
   PhoneNumber: string;
-  PhotoProfile?: IImage;
-  Addresses?: IAddress[];
+  PhotoProfile: IImage;
+  Addresses: IAddress[];
+  Address?: string;
 }
