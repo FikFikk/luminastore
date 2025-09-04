@@ -21,13 +21,12 @@ import { getCart, formatPrice, Cart } from "@/services/cartService";
 import { getMemberAddresses } from "@/services/addressService";
 import { 
   createOrder, 
-  CreateOrderParams,
-  PaymentResponse 
 } from "@/services/orderService";
 import { IAddress } from "@/app/components/inteface/IAddress";
 import { ICartItem } from "@/app/components/inteface/ICartItem";
 import AddAddress from "@/app/components/modal/AddAddress";
 import { NextResponse } from "next/server";
+import { ICreateOrderParams } from "@/app/components/inteface/ICreateOrderParams";
 
 function CheckoutPage() {
   // Cart state - untuk menyimpan semua cart dan filtered selected items
@@ -399,7 +398,7 @@ function CheckoutPage() {
       setError("");
 
       // Use selected cart IDs
-      const orderData: CreateOrderParams = {
+      const orderData: ICreateOrderParams = {
         cart_ids: selectedCartIds,
         address_id: selectedAddress.ID,
         payment_method: paymentMethod,
@@ -428,12 +427,7 @@ function CheckoutPage() {
             window.open(result.paymentUrl, '_blank');
             setTimeout(() => {
               window.location.href = `/orders/${result.order_id}`;
-            }, 1000);
-          } else if (result.qr_code || result.va_number) {
-            setPaymentModal({
-              show: true,
-              data: result
-            });
+            }, 1000); 
           } else {
             window.location.href = `/orders/${result.order_id}`;
           }
@@ -938,98 +932,6 @@ function CheckoutPage() {
         onClose={() => setShowAddressModal(false)}
         onSuccess={handleAddressModalSuccess}
       />
-
-      {/* Enhanced Payment Modal */}
-      {paymentModal.show && paymentModal.data && (
-        <div className="modal fade show d-block" tabIndex={-1}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Pembayaran</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={handleClosePaymentModal}
-                ></button>
-              </div>
-              <div className="modal-body text-center">
-                <div className="alert alert-success">
-                  <h6>Pesanan berhasil dibuat!</h6>
-                  <p className="mb-0">Order ID: {paymentModal.data.order_id}</p>
-                </div>
-
-                {paymentModal.data.qr_code && (
-                  <div className="mb-4">
-                    <h6>Scan QR Code untuk pembayaran:</h6>
-                    <img 
-                      src={paymentModal.data.qr_code} 
-                      alt="QR Code Pembayaran" 
-                      className="img-fluid"
-                      style={{ maxWidth: '300px' }}
-                    />
-                  </div>
-                )}
-
-                {paymentModal.data.va_number && (
-                  <div className="mb-4">
-                    <h6>Nomor Virtual Account:</h6>
-                    <div className="alert alert-info">
-                      <strong>{paymentModal.data.va_number}</strong>
-                    </div>
-                    <small className="text-muted d-block">
-                      Salin nomor VA di atas untuk melakukan pembayaran
-                    </small>
-                  </div>
-                )}
-
-                <div className="mb-3">
-                  <p><strong>Total Pembayaran: {formatPrice(paymentModal.data.total_amount || 0)}</strong></p>
-                  {paymentModal.data.expired_date && (
-                    <p className="text-muted">
-                      Berlaku hingga: {new Date(paymentModal.data.expired_date).toLocaleString('id-ID')}
-                    </p>
-                  )}
-                </div>
-
-                {paymentModal.data.reference && (
-                  <div className="mb-3">
-                    <small className="text-muted">Reference: {paymentModal.data.reference}</small>
-                  </div>
-                )}
-
-                <div className="alert alert-warning">
-                  <small>
-                    <strong>Penting:</strong> Silakan selesaikan pembayaran sebelum batas waktu. 
-                    Status pembayaran akan diperbarui otomatis setelah pembayaran berhasil.
-                  </small>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleClosePaymentModal}
-                >
-                  Tutup
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    if (paymentModal.data?.order_id) {
-                      window.location.href = `/orders/${paymentModal.data.order_id}`;
-                    } else {
-                      handleClosePaymentModal();
-                    }
-                  }}
-                >
-                  Lihat Status Pesanan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

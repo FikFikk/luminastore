@@ -4,20 +4,38 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { logoutUser } from "@/store/slices/authSlice";
+import { getCartThunk, resetCart } from "@/store/slices/cartSlice";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Header({ showHeader = true }: { showHeader?: boolean }) {
   const dispatch = useAppDispatch();
   const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
+  const { summary, items } = useAppSelector((state) => state.cart);
   const router = useRouter();
+
+  // Load cart when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      dispatch(getCartThunk());
+    } else if (!isAuthenticated) {
+      // Reset cart when user logs out
+      dispatch(resetCart());
+    }
+  }, [isAuthenticated, user, dispatch]);
 
   const handleLogout = async () => {
     const result = await dispatch(logoutUser());
 
     if (logoutUser.fulfilled.match(result)) {
-      router.push("/auth/login"); // redirect ke login kalau logout sukses
+      // Reset cart on logout
+      dispatch(resetCart());
+      router.push("/auth/login");
     }
   };
+
+  // Calculate total items for badge
+  const totalCartItems = summary.items_count || 0;
 
   return (
     <>
@@ -111,7 +129,7 @@ export default function Header({ showHeader = true }: { showHeader?: boolean }) 
                   </Link>
                 )}
               </li>
-              <li>
+              <li className="nav-item position-relative">
                 <Link className="nav-link" href="/cart">
                   <Image
                     src="/assets/images/cart.svg"
@@ -119,6 +137,15 @@ export default function Header({ showHeader = true }: { showHeader?: boolean }) 
                     width={20}
                     height={20}
                   />
+                  {isAuthenticated && totalCartItems > 0 && (
+                    <span 
+                      className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      style={{ fontSize: '0.7rem', minWidth: '1.2rem', height: '1.2rem' }}
+                    >
+                      {totalCartItems > 99 ? '99+' : totalCartItems}
+                      <span className="visually-hidden">items in cart</span>
+                    </span>
+                  )}
                 </Link>
               </li>
             </ul>

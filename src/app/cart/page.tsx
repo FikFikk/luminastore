@@ -2,23 +2,29 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  getCart, 
-  updateCartItem, 
-  removeCartItem, 
-  clearCart,
-  formatPrice,
-  Cart 
+  formatPrice
 } from "@/services/cartService";
 import { getProducts } from "@/services/productService";
 import { Shimmer } from "react-shimmer";
+import { useCartPage } from "@/hooks/useCartPage";
 
 function CartPage() {
-  const [cart, setCart] = useState<Cart>({ items: [], summary: { total_items: 0, total_price: 0, total_weight: 0, items_count: 0 } });
+  // Remove local cart state - use Redux state instead
   const [productsData, setProductsData] = useState<{[key: number]: string}>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
   const [couponCode, setCouponCode] = useState("");
+  
+  // Use Redux state through the hook
+  const { 
+    cartItems, 
+    summary, 
+    isLoading, 
+    error,
+    updatingItems,
+    removeItem, 
+    clearCart: clearCartAction, 
+    updateItemQuantity,
+    loadCart 
+  } = useCartPage();
   
   // State untuk checkbox selection
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -28,47 +34,43 @@ function CartPage() {
     loadCart();
   }, []);
 
-  // Update isAllSelected when selectedItems or cart changes
+  // Load product images when cart items change
   useEffect(() => {
-    if (cart.items.length > 0) {
-      const allItemsSelected = cart.items.every(item => selectedItems.has(item.id));
+    if (cartItems.length > 0) {
+      loadProductImages();
+      // Auto-select all items when cart loads
+      const allItemIds = new Set(cartItems.map(item => item.id));
+      setSelectedItems(allItemIds);
+    } else {
+      setSelectedItems(new Set());
+    }
+  }, [cartItems]);
+
+  // Update isAllSelected when selectedItems or cartItems changes
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      const allItemsSelected = cartItems.every(item => selectedItems.has(item.id));
       setIsAllSelected(allItemsSelected);
     } else {
       setIsAllSelected(false);
     }
-  }, [selectedItems, cart.items]);
+  }, [selectedItems, cartItems]);
 
-  const loadCart = async () => {
+  const loadProductImages = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const cartData = await getCart();
-      setCart(cartData);
-
-      // Auto-select all items on first load
-      const allItemIds = new Set(cartData.items.map(item => item.id));
-      setSelectedItems(allItemIds);
-
       // Load all products to get images
-      try {
-        const allProducts = await getProducts({ limit: 1000 });
-        const productImages: {[key: number]: string} = {};
-        
-        allProducts.data.forEach(product => {
-          if (product.image?.original) {
-            productImages[product.id] = product.image.original;
-          }
-        });
-        
-        setProductsData(productImages);
-      } catch (err) {
-        console.error('Error loading product images:', err);
-      }
+      const allProducts = await getProducts({ limit: 1000 });
+      const productImages: {[key: number]: string} = {};
+      
+      allProducts.data.forEach(product => {
+        if (product.image?.original) {
+          productImages[product.id] = product.image.original;
+        }
+      });
+      
+      setProductsData(productImages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load cart');
-      console.error('Error loading cart:', err);
-    } finally {
-      setLoading(false);
+      console.error('Error loading product images:', err);
     }
   };
 
@@ -76,45 +78,9 @@ function CartPage() {
     if (newQuantity <= 0) return;
 
     try {
-      setUpdatingItems(prev => new Set(prev).add(cartId));
-      await updateCartItem(cartId, { quantity: newQuantity });
-      await loadCart();
+      await updateItemQuantity(cartId, newQuantity);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update quantity');
       console.error('Error updating quantity:', err);
-    } finally {
-      setUpdatingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(cartId);
-        return newSet;
-      });
-    }
-  };
-
-  const handleRemoveItem = async (cartId: number) => {
-    if (!confirm('Are you sure you want to remove this item?')) return;
-
-    try {
-      setUpdatingItems(prev => new Set(prev).add(cartId));
-      await removeCartItem(cartId);
-      
-      // Remove from selected items if it was selected
-      setSelectedItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(cartId);
-        return newSet;
-      });
-      
-      await loadCart();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove item');
-      console.error('Error removing item:', err);
-    } finally {
-      setUpdatingItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(cartId);
-        return newSet;
-      });
     }
   };
 
@@ -122,13 +88,27 @@ function CartPage() {
     if (!confirm('Are you sure you want to clear your cart?')) return;
 
     try {
-      setLoading(true);
-      await clearCart();
+      await clearCartAction();
       setSelectedItems(new Set());
-      await loadCart();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear cart');
       console.error('Error clearing cart:', err);
+    }
+  };
+
+  const handleRemoveItem = async (cartId: number) => {
+    if (!confirm('Are you sure you want to remove this item?')) return;
+
+    try {
+      await removeItem(cartId);
+      
+      // Remove from selected items if it was selected
+      setSelectedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cartId);
+        return newSet;
+      });
+    } catch (err) {
+      console.error('Error removing item:', err);
     }
   };
 
@@ -153,7 +133,7 @@ function CartPage() {
   // Handle select all/none
   const handleSelectAll = (selectAll: boolean) => {
     if (selectAll) {
-      const allItemIds = new Set(cart.items.map(item => item.id));
+      const allItemIds = new Set(cartItems.map(item => item.id));
       setSelectedItems(allItemIds);
     } else {
       setSelectedItems(new Set());
@@ -162,7 +142,7 @@ function CartPage() {
 
   // Calculate totals for selected items
   const calculateSelectedTotals = () => {
-    const selectedCartItems = cart.items.filter(item => selectedItems.has(item.id));
+    const selectedCartItems = cartItems.filter(item => selectedItems.has(item.id));
     const totalItems = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = selectedCartItems.reduce((sum, item) => sum + item.total_price, 0);
     const totalWeight = selectedCartItems.reduce((sum, item) => sum + ((item.weight || 0) * item.quantity), 0);
@@ -194,7 +174,7 @@ function CartPage() {
     window.location.href = "/cart/checkout";
   };
 
-  if (loading) {
+  if (isLoading && cartItems.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
         <div className="spinner-border text-primary" role="status">
@@ -212,7 +192,7 @@ function CartPage() {
           <div className="row justify-content-between">
             <div className="col-lg-5">
               <div className="intro-excerpt">
-                <h1>Cart ({cart.summary.items_count} items)</h1>
+                <h1>Cart ({summary.items_count} items)</h1>
                 {selectedItems.size > 0 && (
                   <p className="text-muted">
                     {selectedItems.size} item(s) selected for checkout
@@ -240,7 +220,7 @@ function CartPage() {
             </div>
           )}
 
-          {cart.items.length === 0 ? (
+          {cartItems.length === 0 ? (
             <div className="row">
               <div className="col-12 text-center">
                 <h3>Your cart is empty</h3>
@@ -284,7 +264,7 @@ function CartPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {cart.items.map((item) => (
+                        {cartItems.map((item) => (
                           <tr key={item.id} className={selectedItems.has(item.id) ? 'table-active' : ''}>
                             <td className="product-checkbox">
                               <div className="form-check">
@@ -340,15 +320,6 @@ function CartPage() {
                                 <Shimmer width={60} height={16} />
                               )}
                             </td>
-
-                            <td>
-                              {item.total_price ? (
-                                formatPrice(item.total_price)
-                              ) : (
-                                <Shimmer width={70} height={16} />
-                              )}
-                            </td>
-
 
                             <td>
                               <div
@@ -423,9 +394,9 @@ function CartPage() {
                       <button 
                         className="btn btn-black btn-sm btn-block"
                         onClick={loadCart}
-                        disabled={loading}
+                        disabled={isLoading}
                       >
-                        {loading ? 'Updating...' : 'Update Cart'}
+                        {isLoading ? 'Updating...' : 'Update Cart'}
                       </button>
                     </div>
                     <div className="col-md-6">
@@ -443,7 +414,7 @@ function CartPage() {
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={handleClearCart}
-                        disabled={loading}
+                        disabled={isLoading}
                       >
                         Clear Cart
                       </button>
@@ -488,9 +459,9 @@ function CartPage() {
                           <h3 className="text-black h4 text-uppercase">
                             Cart Totals
                           </h3>
-                          {selectedItems.size > 0 && selectedItems.size < cart.items.length && (
+                          {selectedItems.size > 0 && selectedItems.size < cartItems.length && (
                             <small className="text-muted d-block">
-                              ({selectedItems.size} of {cart.items.length} items selected)
+                              ({selectedItems.size} of {cartItems.length} items selected)
                             </small>
                           )}
                         </div>
@@ -541,7 +512,7 @@ function CartPage() {
                             onClick={handleProceedToCheckout}
                             disabled={
                               selectedItems.size === 0 || 
-                              cart.items.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock)
+                              cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock)
                             }
                           >
                             Proceed To Checkout ({selectedItems.size} items)
@@ -551,7 +522,7 @@ function CartPage() {
                               Please select at least one item to checkout
                             </small>
                           )}
-                          {cart.items.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock) && (
+                          {cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock) && (
                             <small className="text-danger d-block mt-2">
                               Please check items with insufficient stock before checkout
                             </small>

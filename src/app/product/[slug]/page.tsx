@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProductBySlug, Product } from "@/services/productService";
-import { addToCart } from "@/services/cartService";
 import { Image as RawShimmerImage, Shimmer } from 'react-shimmer'
+import { useAddToCart } from "@/hooks/useAddToCart";
 
 function ProductDetailPage() {
   const params = useParams();
@@ -13,11 +13,9 @@ function ProductDetailPage() {
   
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [addingToCart, setAddingToCart] = useState(false);
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
   
   // Image gallery states
@@ -25,6 +23,7 @@ function ProductDetailPage() {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { addToCart, isLoading: addingToCart, error } = useAddToCart();
   
   const imageRef = useRef<HTMLDivElement>(null);
   
@@ -88,7 +87,7 @@ function ProductDetailPage() {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      setError(null);
+      // setError(null);
 
       console.log('Attempting to fetch product with slug:', slug);
       const productData = await getProductBySlug(slug);
@@ -108,7 +107,7 @@ function ProductDetailPage() {
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch product");
+      // setError(err instanceof Error ? err.message : "Failed to fetch product");
       console.error("Error fetching product:", err);
     } finally {
       setLoading(false);
@@ -212,8 +211,6 @@ function ProductDetailPage() {
     }
 
     try {
-      setAddingToCart(true);
-      
       await addToCart({
         product_id: product.id,
         variant_id: selectedVariant || undefined,
@@ -222,11 +219,12 @@ function ProductDetailPage() {
 
       showMessage('success', 'Item added to cart successfully!');
       
+      // Optional: Reset quantity after successful add
+      setQuantity(1);
+      
     } catch (error) {
       console.error('Error adding to cart:', error);
       showMessage('error', error instanceof Error ? error.message : 'Failed to add item to cart');
-    } finally {
-      setAddingToCart(false);
     }
   };
 
@@ -728,7 +726,6 @@ function ProductDetailPage() {
                               className="btn btn-primary w-100 btn-lg py-3 fw-bold"
                               style={{ borderRadius: '12px' }}
                               onClick={handleAddToCart}
-                              disabled={addingToCart || currentStock === 0}
                             >
                               {addingToCart ? (
                                 <>

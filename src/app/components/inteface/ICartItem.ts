@@ -7,6 +7,7 @@ export interface ICartItem {
   quantity: number;
   price: number;
   total_price: number;
+  sub_total: number;
   weight?: number;
   total_weight?: number;
   available_stock?: number;
