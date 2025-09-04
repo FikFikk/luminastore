@@ -22,4 +22,6 @@ export interface IOrder {
   is_paid: boolean;
   is_delivered: boolean;
   tracking_number: string | null;
+  expired_at: string | null;
+  is_expired: boolean;
 }

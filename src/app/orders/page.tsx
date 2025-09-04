@@ -446,7 +446,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="col-md-4 text-md-end mt-2 mt-md-0">
                         <div className="btn-group" role="group">
-                          {order.can_pay && order.payment_url && (
+                          {order.can_pay && order.payment_url && !order?.is_expired &&(
                             <a
                               href={order.payment_url}
                               target="_blank"

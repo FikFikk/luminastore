@@ -4,6 +4,8 @@ import { IOrderItem } from "./IOrderItem";
 import { IOrderDetail } from "./IOrderDetail";
 
 export interface IOrderDetailResponse {
+  expired_at: string;
+  is_expired: string;
   order: IOrderDetail;
   items: IOrderItem[];
   customer: ICustomer;

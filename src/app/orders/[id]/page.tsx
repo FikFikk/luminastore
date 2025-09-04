@@ -435,7 +435,9 @@ export default function OrderDetailPage() {
                   </div>
 
                   {/* Bayar Button */}
-                  {orderDetail?.can_pay && orderDetail?.order.payment_url && (
+                  {orderDetail?.can_pay &&
+                  orderDetail?.order.payment_url &&
+                  !orderDetail?.is_expired && (
                     <a
                       href={orderDetail.order.payment_url}
                       target="_blank"
