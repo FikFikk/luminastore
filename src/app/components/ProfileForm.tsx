@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { updateProfile, uploadPhoto, clearError } from "@/store/slices/userSlice";
 import Link from "next/link";
-import Image from "next/image";
 import AddAddress from "@/app/components/modal/AddAddress";
 import { getMemberAddresses, setDefaultAddress, deleteAddress } from "@/services/addressService";
 import { IAddress } from "@/app/components/inteface/IAddress";
@@ -207,16 +206,13 @@ export default function ProfileForm() {
                     setLocalMessage("");
                     setIsSuccess(false);
                 }, 3000);
-            } else {
-                throw new Error(result.data?.message || "Failed to delete address");
             }
-            
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Failed to delete address:", error);
-            setLocalMessage("Gagal menghapus alamat");
+            setLocalMessage(
+                error instanceof Error ? error.message : "Gagal menghapus alamat"
+            );
             setIsSuccess(false);
-        } finally {
-            setDeletingAddress(null);
         }
     };
 

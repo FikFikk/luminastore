@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getProducts, Product, getCategories, Category, ProductListParams } from "@/services/productService";
 import Link from "next/link";
-import { Image, Shimmer } from 'react-shimmer'
+import { Image as RawShimmerImage, Shimmer } from 'react-shimmer'
 
 function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,7 +21,10 @@ function ProductPage() {
     sort_field: "Title",
     sort_dir: "ASC",
   });
-  const CShimmer = Image as any;
+  const ShimmerImage = RawShimmerImage as React.ComponentType<{
+    src: string;
+    fallback: React.ReactNode;
+  }>;
   const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
 
   const handleImageLoad = (productId: number) => {
@@ -124,11 +127,15 @@ function ProductPage() {
   }, []);
 
   // Handle filter changes
-  const handleFilterChange = (key: keyof ProductListParams, value: any) => {
-    const updatedFilters = { ...filters, [key]: value, page: 1 };
+  const handleFilterChange = <K extends keyof ProductListParams>(
+    key: K,
+    value: ProductListParams[K]
+  ) => {
+    const updatedFilters: ProductListParams = { ...filters, [key]: value, page: 1 };
     setFilters(updatedFilters);
     fetchProducts(updatedFilters);
   };
+
 
   // Handle search
   const handleSearch = (searchTerm: string) => {
@@ -269,7 +276,10 @@ function ProductPage() {
                         className="form-select form-select-sm"
                         value={`${filters.sort_field}-${filters.sort_dir}`}
                         onChange={(e) => {
-                          const [field, dir] = e.target.value.split('-');
+                          const [field, dir] = e.target.value.split('-') as [
+                            'Title' | 'Price' | 'Rating',
+                            'ASC' | 'DESC'
+                          ];
                           handleFilterChange('sort_field', field);
                           handleFilterChange('sort_dir', dir);
                         }}
@@ -385,7 +395,7 @@ function ProductPage() {
                     {filters.title && (
                       <span className="badge bg-primary px-3 py-2 rounded-pill d-flex align-items-center gap-2">
                         <i className="fas fa-search"></i>
-                        Search: "{filters.title}"
+                        Search: {filters.title}
                         <button 
                           className="btn-close btn-close-white"
                           style={{ fontSize: '0.6em' }}
@@ -463,7 +473,7 @@ function ProductPage() {
                 </div>
                 <h5 className="text-muted mb-3">No products found</h5>
                 <p className="text-muted mb-4">
-                  We couldn't find any products matching your criteria.<br/>
+                  We couldnt find any products matching your criteria.<br/>
                   Try adjusting your filters or search terms.
                 </p>
                 <button
@@ -513,7 +523,7 @@ function ProductPage() {
                         {isImageLoaded && (
                           <div className="content-container">
                             {/* Image */}
-                            <CShimmer
+                            <ShimmerImage
                               src={
                                 product.image?.medium ||
                                 product.image?.original ||

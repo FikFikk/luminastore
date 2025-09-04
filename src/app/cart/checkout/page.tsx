@@ -1,7 +1,5 @@
 "use client";
 
-import AsyncSelect from "react-select/async";
-import { searchDestinations, Destination } from "@/services/rajaongkirService";
 import { 
   getShippingOptions,
   ShippingOption,
@@ -14,7 +12,8 @@ import {
   DuitkuPaymentMethodsResponse,
   getPaymentMethodInfo,
   getCategoryDisplayName,
-  DuitkuPaymentMethod
+  DuitkuPaymentMethod,
+  GroupedPaymentMethods
 } from "@/services/duitkuService";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -28,6 +27,7 @@ import {
 import { IAddress } from "@/app/components/inteface/IAddress";
 import { ICartItem } from "@/app/components/inteface/ICartItem";
 import AddAddress from "@/app/components/modal/AddAddress";
+import { NextResponse } from "next/server";
 
 function CheckoutPage() {
   // Cart state - untuk menyimpan semua cart dan filtered selected items
@@ -120,6 +120,12 @@ function CheckoutPage() {
     }
   };
 
+  type CategoryKey = keyof GroupedPaymentMethods;
+
+  function isCategoryKey(value: string): value is CategoryKey {
+    return ["bank_transfer", "ewallet", "credit_card", "retail", "others"].includes(value);
+  }
+
   // Calculate totals for selected items only
   const calculateSelectedTotals = () => {
     const totalItems = selectedCartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -148,9 +154,20 @@ function CheckoutPage() {
       const methods = await getDuitkuPaymentMethods(totalAmount);
       setPaymentMethods(methods);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load payment methods:', error);
-      setPaymentMethodsError(error.message || 'Gagal memuat metode pembayaran');
+      return NextResponse.json(
+        {
+          error: "Terjadi kesalahan sistem. Silakan coba lagi nanti.",
+          details:
+            process.env.NODE_ENV === "development"
+              ? error instanceof Error
+                ? error.message
+                : String(error)
+              : undefined,
+        },
+        { status: 500 }
+      );
     } finally {
       setPaymentMethodsLoading(false);
     }
@@ -210,26 +227,30 @@ function CheckoutPage() {
       setShippingOptions(options);
       retryCountRef.current = 0;
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (currentRequestRef.current !== requestId) {
         console.log(`Request ${requestId} cancelled - newer request in progress`);
         return;
       }
 
       console.error(`Load shipping options error [${requestId}]:`, err);
-      
+
       let errorMessage = "Gagal memuat ongkir. Silakan coba lagi.";
-      
-      if (err.message.includes('429') || err.message.toLowerCase().includes('rate limit')) {
-        errorMessage = "Sistem sedang sibuk. Silakan tunggu sebentar sebelum mencoba lagi.";
-      } else if (err.message.includes('401') || err.message.toLowerCase().includes('auth')) {
-        errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
-      } else if (err.message.includes('500')) {
-        errorMessage = "Terjadi kesalahan server. Silakan coba lagi nanti.";
-      } else if (err.message) {
-        errorMessage = err.message;
+
+      if (err instanceof Error && err.message) {
+        const msg = err.message.toLowerCase();
+
+        if (msg.includes("429") || msg.includes("rate limit")) {
+          errorMessage = "Sistem sedang sibuk. Silakan tunggu sebentar sebelum mencoba lagi.";
+        } else if (msg.includes("401") || msg.includes("auth")) {
+          errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
+        } else if (msg.includes("500")) {
+          errorMessage = "Terjadi kesalahan server. Silakan coba lagi nanti.";
+        } else {
+          errorMessage = err.message;
+        }
       }
-      
+
       setShippingError(errorMessage);
       setShippingOptions([]);
     } finally {
@@ -237,6 +258,7 @@ function CheckoutPage() {
         setShippingLoading(false);
       }
     }
+
   }, [selectedAddress, selectedTotals.total_weight, addresses]);
 
   // Optimized effect for loading shipping options - menggunakan selected weight
@@ -422,28 +444,31 @@ function CheckoutPage() {
         throw new Error(errorMessage);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating order:", error);
-      
+
       let errorMessage = "Gagal membuat pesanan. Silakan coba lagi.";
-      
-      if (error.message.includes('401')) {
-        errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
-      } else if (error.message.includes('400')) {
-        errorMessage = "Data pesanan tidak valid. Periksa kembali form Anda.";
-      } else if (error.message.includes('422')) {
-        errorMessage = "Data yang dikirim tidak lengkap atau tidak sesuai format.";
-      } else if (error.message.includes('500')) {
-        errorMessage = "Terjadi kesalahan server. Silakan coba lagi nanti.";
-      } else if (error.message.toLowerCase().includes('notes') || error.message.toLowerCase().includes('catatan')) {
-        errorMessage = `Kesalahan pada catatan pesanan: ${error.message}`;
-      } else if (error.message) {
-        errorMessage = error.message;
+
+      if (error instanceof Error && error.message) {
+        const msg = error.message.toLowerCase();
+
+        if (msg.includes("401")) {
+          errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
+        } else if (msg.includes("400")) {
+          errorMessage = "Data pesanan tidak valid. Periksa kembali form Anda.";
+        } else if (msg.includes("422")) {
+          errorMessage = "Data yang dikirim tidak lengkap atau tidak sesuai format.";
+        } else if (msg.includes("500")) {
+          errorMessage = "Terjadi kesalahan server. Silakan coba lagi nanti.";
+        } else if (msg.includes("notes") || msg.includes("catatan")) {
+          errorMessage = `Kesalahan pada catatan pesanan: ${error.message}`;
+        } else {
+          errorMessage = error.message;
+        }
       }
-      
+
       setError(errorMessage);
       alert(errorMessage);
-      
     } finally {
       setIsProcessing(false);
     }
@@ -706,7 +731,12 @@ function CheckoutPage() {
                         
                         return (
                           <div key={category} className="mb-3">
-                            <h6 className="text-primary mb-2">{getCategoryDisplayName(category as any)}</h6>
+                            <h6 className="text-primary mb-2">
+                              {isCategoryKey(category)
+                                ? getCategoryDisplayName(category)
+                                : "Metode Tidak Dikenal"}
+                            </h6>
+
                             <div className="ms-3">
                               {methods.map((method: DuitkuPaymentMethod) => {
                                 const methodInfo = getPaymentMethodInfo(method);

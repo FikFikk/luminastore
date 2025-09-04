@@ -125,12 +125,17 @@ const PutAddress: React.FC<PutAddressProps> = ({
       } else {
         throw new Error(updated.message || "Gagal memperbarui alamat");
       }
-    } catch (err: any) {
-      console.error("Update address error:", err);
-      alert(err.message || "Terjadi kesalahan saat update alamat");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err: unknown) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat update alamat";
+
+        console.error("Update address error:", err);
+        alert(message);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const handleClose = () => {

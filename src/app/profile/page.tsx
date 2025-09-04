@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import ProfileForm from "@/app/components/ProfileForm";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 

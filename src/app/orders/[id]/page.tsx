@@ -7,29 +7,14 @@ import {
   getOrderById, 
   updateOrderStatus, 
   cancelOrder, 
-  formatOrderStatus, 
-  formatPaymentStatus,
-  formatShippingStatus,
-  getStatusBadgeClass,
-  formatCurrency,
   formatDate,
-  canUpdateStatus,
-  canCancelOrder,
   type OrderDetailResponse,
-  type Order,
-  type OrderItem,
-  type Customer,
-  type ShippingAddress
 } from '@/services/orderService';
 
 import { 
-  getDuitkuPaymentMethods, 
   DuitkuPaymentMethodsResponse,
-  getPaymentMethodInfo,
-  getCategoryDisplayName,
   DuitkuPaymentMethod
 } from "@/services/duitkuService";
-import { formatPrice } from '@/services/cartService';
 import { Shimmer } from 'react-shimmer';
 
 export default function OrderDetailPage() {
@@ -42,10 +27,6 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  const [paymentMethods, setPaymentMethods] = useState<DuitkuPaymentMethodsResponse | null>(null);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<DuitkuPaymentMethod | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
 
   useEffect(() => {
     if (orderId) {

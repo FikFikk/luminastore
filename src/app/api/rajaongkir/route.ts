@@ -31,7 +31,18 @@ export async function GET(req: Request) {
     const data = await response.json();
     return NextResponse.json(data);
     
-  } catch (err: any) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details:
+          process.env.NODE_ENV === "development"
+            ? err instanceof Error
+              ? err.message
+              : String(err)
+            : undefined,
+      },
+      { status: 500 }
+    );
   }
 }

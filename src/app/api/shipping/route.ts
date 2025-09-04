@@ -41,8 +41,17 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
+interface CourierService {
+  cost: number;
+  [key: string]: unknown;
+}
+
+interface Courier {
+  services: CourierService[];
+  [key: string]: unknown; 
+}
 // Response cache to reduce backend calls
-const responseCache = new Map<string, { data: any; timestamp: number }>();
+const responseCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
 
 export async function GET(req: Request) {
@@ -251,12 +260,14 @@ export async function GET(req: Request) {
         const filteredData = {
           ...data,
           shipping_options: data.shipping_options
-            .map((courier: { services: any[]; }) => ({
+            .map((courier: Courier) => ({
               ...courier,
-              services: courier.services.filter(service => service.cost > 0)
+              services: courier.services.filter((service) => service.cost > 0),
             }))
-            .filter((courier: { services: string | any[]; }) => courier.services.length > 0)
+            .filter((courier: Courier) => courier.services.length > 0),
         };
+
+
         
         // FIXED: Log final response for debugging consistency
         console.log("[Shipping Route] Final filtered response:", JSON.stringify(filteredData, null, 2));
@@ -272,26 +283,39 @@ export async function GET(req: Request) {
         }, { status: 502 });
       }
 
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       clearTimeout(timeoutId);
-      
-      if (fetchError.name === 'AbortError') {
+
+      if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
         console.error("[Shipping Route] Request timeout");
-        return NextResponse.json({ 
-          error: "Timeout: Server pengiriman tidak merespons. Silakan coba lagi." 
-        }, { status: 504 });
+        return NextResponse.json(
+          {
+            error: "Timeout: Server pengiriman tidak merespons. Silakan coba lagi.",
+          },
+          { status: 504 }
+        );
       }
-      
+
       throw fetchError; // Re-throw other fetch errors
     }
 
-  } catch (error: any) {
-    console.error("[Shipping Route] Unexpected error:", error);
-    return NextResponse.json({ 
-      error: "Terjadi kesalahan sistem. Silakan coba lagi nanti.",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status: 500 });
-  }
+    } catch (error: unknown) {
+      console.error("[Shipping Route] Unexpected error:", error);
+
+      return NextResponse.json(
+        {
+          error: "Terjadi kesalahan sistem. Silakan coba lagi nanti.",
+          details:
+            process.env.NODE_ENV === "development"
+              ? error instanceof Error
+                ? error.message
+                : String(error)
+              : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
 }
 
 // Optional: Add cleanup for cache and rate limiter

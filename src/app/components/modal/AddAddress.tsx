@@ -54,11 +54,13 @@ const AddAddress: React.FC<AddAddressProps> = ({
     try {
       const results = await searchDestinations(inputValue);
       return results;
-    } catch (err: any) {
-      console.error("Load destination options error:", err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Load destination options error:", message);
       return [];
     }
   };
+
 
   // Handle destination selection
   const handleDestinationSelect = (destination: Destination | null) => {
@@ -134,12 +136,16 @@ const AddAddress: React.FC<AddAddressProps> = ({
       onSuccess("Alamat berhasil ditambahkan");
       onClose();
       
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal menambah alamat. Silakan coba lagi.";
+        
       console.error("Error creating address:", err);
-      alert(err.message || "Gagal menambah alamat. Silakan coba lagi.");
+      alert(message);
     } finally {
       setLoading(false);
     }
+
   };
 
   // Handle modal close

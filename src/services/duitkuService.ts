@@ -88,8 +88,13 @@ export const getDuitkuPaymentMethods = async (amount: number): Promise<DuitkuPay
     console.log(`Successfully fetched ${data.totalMethods} payment methods`);
     return data;
 
-  } catch (error: any) {
-    console.error('Error fetching payment methods:', error);
+  }  catch (error: unknown) {
+    console.error("Error fetching payment methods:", error);
+
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+
     throw error;
   }
 };

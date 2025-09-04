@@ -2,12 +2,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import "./globals.css"; // kalau kamu punya CSS global
-import Footer from "./components/Footer";
-import Header from "./components/Header";
+import "./globals.css";
 import ClientLayout from "./ClientLayout";
-import { Provider } from 'react-redux';
-import { store } from '@/store';
 import { Providers } from '@/store/providers';
 import AuthProvider from "@/store/AuthProvider";
 

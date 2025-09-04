@@ -1,22 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { login, register, forgotPassword, logout as logoutService } from '@/services/authService';
 import { getUser } from '@/services/userService';
-import { IImage } from '@/app/components/inteface/IImage';
 import Cookies from 'js-cookie';
-import { IAddress } from '@/app/components/inteface/IAddress';
-
-export interface UserData {
-  Email: string;
-  FirstName: string;
-  Surname: string;
-  PhoneNumber?: string;
-  PhotoProfile?: IImage;
-  Addresses: IAddress;
-  // tambahan field lain jika ada
-}
+import { IUser } from '@/app/components/inteface/IUser';
 
 export interface AuthState {
-  user: UserData | null;
+  user: IUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -158,7 +147,7 @@ const authSlice = createSlice({
       Cookies.remove("token");
     },
     // Reducer untuk update user data dari komponen lain
-    updateUserData: (state, action: PayloadAction<Partial<UserData>>) => {
+    updateUserData: (state, action: PayloadAction<Partial<IUser>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
       }

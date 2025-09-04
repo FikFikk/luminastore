@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
-import { logoutUser, setAuthenticated } from "@/store/slices/authSlice";
+import { logoutUser } from "@/store/slices/authSlice";
 import { useRouter } from "next/navigation";
 
 export default function Header({ showHeader = true }: { showHeader?: boolean }) {

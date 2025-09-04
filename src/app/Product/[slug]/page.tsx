@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProductBySlug, Product } from "@/services/productService";
 import { addToCart } from "@/services/cartService";
-import { Image, Shimmer } from 'react-shimmer'
+import { Image as RawShimmerImage, Shimmer } from 'react-shimmer'
 
 function ProductDetailPage() {
   const params = useParams();
@@ -19,7 +19,24 @@ function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
-  const CShimmer = Image as any;
+  
+  // Image gallery states
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const imageRef = useRef<HTMLDivElement>(null);
+  
+  const ShimmerImage = RawShimmerImage as React.ComponentType<{
+    src: string;
+    fallback: React.ReactNode;
+    onLoad?: () => void;
+    onError?: () => void;
+    style?: React.CSSProperties;
+    className?: string;
+  }>;
+
   // Format currency to Indonesian Rupiah
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -151,6 +168,27 @@ function ProductDetailPage() {
     );
   };
 
+  // Handle image selection
+  const handleImageSelect = (imageUrl: string, index: number) => {
+    setSelectedImage(imageUrl);
+    setCurrentImageIndex(index);
+    setIsImageLoaded(false);
+    setImageError(false);
+  };
+
+  // Handle next/previous image in modal
+  const handlePreviousImage = () => {
+    const allImages = getAllImages();
+    const newIndex = currentImageIndex > 0 ? currentImageIndex - 1 : allImages.length - 1;
+    handleImageSelect(allImages[newIndex].original, newIndex);
+  };
+
+  const handleNextImage = () => {
+    const allImages = getAllImages();
+    const newIndex = currentImageIndex < allImages.length - 1 ? currentImageIndex + 1 : 0;
+    handleImageSelect(allImages[newIndex].original, newIndex);
+  };
+
   // Handle add to cart
   const handleAddToCart = async () => {
     if (!product) return;
@@ -238,7 +276,7 @@ function ProductDetailPage() {
         <div className="text-center py-5">
           <div className="alert alert-warning d-inline-block">
             <h5 className="alert-heading">Product not found</h5>
-            <p className="mb-3">The product you're looking for doesn't exist.</p>
+            <p className="mb-3">The product youre looking for doesnt exist.</p>
             <Link href="/product" className="btn btn-primary">
               <i className="fas fa-arrow-left me-2"></i>Back to Products
             </Link>
@@ -260,6 +298,62 @@ function ProductDetailPage() {
             <i className={`fas ${showAlert.type === 'success' ? 'fa-check-circle' : showAlert.type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} me-2`}></i>
             {showAlert.message}
             <button type="button" className="btn-close" onClick={() => setShowAlert(null)}></button>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {showImageModal && (
+        <div className="modal show d-block" style={{ zIndex: 10000, backgroundColor: 'rgba(0,0,0,0.9)' }}>
+          <div className="modal-dialog modal-xl modal-dialog-centered">
+            <div className="modal-content bg-transparent border-0">
+              <div className="modal-header border-0 pb-0">
+                <button
+                  type="button"
+                  className="btn-close btn-close-white ms-auto"
+                  onClick={() => setShowImageModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body text-center p-0">
+                <div className="position-relative">
+                  {/* Navigation arrows */}
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        className="btn btn-light btn-lg position-absolute start-0 top-50 translate-middle-y ms-3 rounded-circle"
+                        style={{ zIndex: 1001, width: '50px', height: '50px' }}
+                        onClick={handlePreviousImage}
+                      >
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                      <button
+                        className="btn btn-light btn-lg position-absolute end-0 top-50 translate-middle-y me-3 rounded-circle"
+                        style={{ zIndex: 1001, width: '50px', height: '50px' }}
+                        onClick={handleNextImage}
+                      >
+                        <i className="fas fa-chevron-right"></i>
+                      </button>
+                    </>
+                  )}
+                  
+                  <img
+                    src={selectedImage}
+                    alt={product.title}
+                    className="img-fluid rounded"
+                    style={{ maxHeight: '80vh', maxWidth: '100%' }}
+                  />
+                  
+                  {/* Image counter */}
+                  {allImages.length > 1 && (
+                    <div className="position-absolute bottom-0 start-50 translate-middle-x mb-3">
+                      <span className="badge bg-dark bg-opacity-75 px-3 py-2">
+                        {currentImageIndex + 1} / {allImages.length}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -298,96 +392,164 @@ function ProductDetailPage() {
             <div className="col-lg-10">
               <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '20px' }}>
                 <div className="row g-0">
-                  {/* Product Images */}
+                  {/* Enhanced Product Images */}
                   <div className="col-md-6 bg-white p-4">
                     <div className="product-detail-images position-sticky" style={{ top: '20px' }}>
                       {/* Main Image */}
                       <div className="main-image mb-3 position-relative">
-                        <div className="image-container" style={{
-                          width: "100%",
-                          height: "450px",
-                          borderRadius: "10px",
-                          overflow: "hidden",
-                          cursor: "zoom-in",
-                          transition: "transform 0.3s ease",
-                        }}>
-                          <CShimmer
-                            src={
-                              selectedImage ||
-                              "/assets/images/sofa.png"
-                            }
-                            className="img-fluid"
-                            style={{ 
-                              width: '100%', 
-                              height: '450px', 
-                              objectFit: 'cover',
-                              borderRadius: '10px',
-                              transition: 'transform 0.3s ease',
-                              cursor: 'zoom-in'
+                        <div 
+                          className="image-container position-relative overflow-hidden"
+                          style={{
+                            width: "100%",
+                            height: "450px",
+                            borderRadius: "15px",
+                            cursor: "zoom-in",
+                            transition: "all 0.3s ease",
+                            backgroundColor: '#f8f9fa'
+                          }}
+                          onClick={() => setShowImageModal(true)}
+                          ref={imageRef}
+                        >
+                          {!isImageLoaded && !imageError && (
+                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                              <Shimmer width={500} height={450} className="rounded" />
+                            </div>
+                          )}
+                          
+                          <ShimmerImage
+                            src={selectedImage || "/assets/images/sofa.png"}
+                            fallback={<Shimmer width={100} height={80} className="rounded" />}
+                            onLoad={() => setIsImageLoaded(true)}
+                            onError={() => {
+                              setImageError(true);
+                              setIsImageLoaded(true);
                             }}
-                            fallback={<Shimmer width={307} height={450} className="img-fluid" />}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              transition: 'transform 0.3s ease',
+                              opacity: isImageLoaded ? 1 : 0
+                            }}
+                            className="product-main-image"
                           />
-                        </div>
-                        
-                        {/* Image overlay with zoom icon */}
-                        <div className="position-absolute top-0 end-0 m-3">
-                          <button className="btn btn-light btn-sm rounded-circle shadow-sm">
-                            <i className="fas fa-search-plus"></i>
-                          </button>
+                          
+                          {/* Image overlay effects */}
+                          <div className="image-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0">
+                            <div className="bg-dark bg-opacity-75 text-white px-3 py-2 rounded-pill">
+                              <i className="fas fa-search-plus me-2"></i>
+                              Click to zoom
+                            </div>
+                          </div>
+                          
+                          {/* Corner badges */}
+                          <div className="position-absolute top-0 end-0 m-3 d-flex flex-column gap-2">
+                            <button 
+                              className="btn btn-light btn-sm rounded-circle shadow-sm zoom-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowImageModal(true);
+                              }}
+                              title="Zoom image"
+                            >
+                              <i className="fas fa-expand-arrows-alt"></i>
+                            </button>
+                            {allImages.length > 1 && (
+                              <div className="badge bg-primary">
+                                {currentImageIndex + 1}/{allImages.length}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Quick navigation arrows on main image */}
+                          {allImages.length > 1 && (
+                            <>
+                              <button
+                                className="btn btn-light btn-sm position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle nav-arrow opacity-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviousImage();
+                                }}
+                              >
+                                <i className="fas fa-chevron-left"></i>
+                              </button>
+                              <button
+                                className="btn btn-light btn-sm position-absolute end-0 top-50 translate-middle-y me-2 rounded-circle nav-arrow opacity-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNextImage();
+                                }}
+                              >
+                                <i className="fas fa-chevron-right"></i>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      {/* Thumbnail Images */}
+                      {/* Enhanced Thumbnail Images */}
                       {allImages.length > 1 && (
                         <div className="thumbnail-images">
+                          <h6 className="fw-bold mb-3 text-muted small">More Images</h6>
                           <div className="row g-2">
-                            {allImages.slice(0, 4).map((image, index) => (
+                            {allImages.map((image, index) => (
                               <div key={index} className="col-3">
                                 <div 
-                                  className={`thumbnail-item ${
+                                  className={`thumbnail-item position-relative ${
                                     selectedImage === image.original ? 'active' : ''
                                   }`}
                                   style={{
-                                    borderRadius: '8px',
+                                    borderRadius: '10px',
                                     overflow: 'hidden',
                                     width: "100%",
                                     height: "80px",
                                     cursor: 'pointer',
                                     transition: 'all 0.3s ease',
-                                    border: selectedImage === image.original ? '3px solid #0d6efd' : '2px solid transparent',
+                                    border: selectedImage === image.original ? '3px solid #0d6efd' : '2px solid #e9ecef',
                                     transform: selectedImage === image.original ? 'scale(1.05)' : 'scale(1)'
                                   }}
-                                  onClick={() => setSelectedImage(image.original)}
+                                  onClick={() => handleImageSelect(image.original, index)}
                                 >
-                                  <CShimmer
+                                  <ShimmerImage
                                     src={image.small || image.medium || image.original}
-                                    style={{ 
-                                      width: '100%', 
-                                      height: '80px', 
-                                      objectFit: 'cover',
-                                      display: 'block',
-                                    }}
                                     fallback={<Shimmer width={100} height={80} />}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover'
+                                    }}
                                   />
+                                  
+                                  {/* Active indicator */}
+                                  {selectedImage === image.original && (
+                                    <div className="position-absolute top-0 end-0 m-1">
+                                      <div className="bg-primary rounded-circle" style={{ width: '20px', height: '20px' }}>
+                                        <i className="fas fa-check text-white small position-absolute top-50 start-50 translate-middle"></i>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Hover overlay */}
+                                  <div className="thumbnail-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25 opacity-0 d-flex align-items-center justify-content-center">
+                                    <i className="fas fa-eye text-white"></i>
+                                  </div>
                                 </div>
                               </div>
                             ))}
-                            {allImages.length > 4 && (
-                              <div className="col-3">
-                                <div 
-                                  className="d-flex align-items-center justify-content-center bg-light text-muted"
-                                  style={{
-                                    height: '80px',
-                                    borderRadius: '8px',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
-                                  }}
-                                >
-                                  +{allImages.length - 4}
-                                </div>
-                              </div>
-                            )}
                           </div>
+                          
+                          {/* View all images button */}
+                          {allImages.length > 4 && (
+                            <div className="mt-3">
+                              <button 
+                                className="btn btn-outline-primary btn-sm w-100"
+                                onClick={() => setShowImageModal(true)}
+                              >
+                                <i className="fas fa-images me-2"></i>
+                                View All {allImages.length} Images
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -584,14 +746,66 @@ function ProductDetailPage() {
         </div>
       </section>
 
-      {/* Additional Styles */}
+      {/* Enhanced Styles */}
       <style jsx>{`
+        .image-container:hover .image-overlay {
+          opacity: 1 !important;
+        }
+        
+        .image-container:hover .nav-arrow {
+          opacity: 1 !important;
+        }
+        
+        .image-container:hover .product-main-image {
+          transform: scale(1.02);
+        }
+        
         .thumbnail-item:hover {
-          transform: scale(1.02) !important;
+          transform: scale(1.05) !important;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .thumbnail-item:hover .thumbnail-overlay {
+          opacity: 1 !important;
+        }
+        
+        .image-container {
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         
         .image-container:hover {
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .zoom-btn {
+          transition: all 0.3s ease;
+        }
+        
+        .zoom-btn:hover {
+          transform: scale(1.1);
+          background-color: #0d6efd !important;
+          color: white !important;
+        }
+        
+        .nav-arrow {
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+          background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+        
+        .nav-arrow:hover {
+          background-color: #0d6efd !important;
+          color: white !important;
+          transform: scale(1.1);
+        }
+        
+        .thumbnail-item.active {
+          box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+        }
+        
+        .thumbnail-overlay {
+          transition: all 0.3s ease;
+          backdrop-filter: blur(2px);
         }
         
         .btn-primary {
@@ -613,6 +827,50 @@ function ProductDetailPage() {
           line-height: 1.2;
         }
         
+        .modal {
+          backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+          animation: fadeInScale 0.3s ease;
+        }
+        
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        .product-main-image {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .shimmer-container {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+        
+        .image-overlay {
+          transition: all 0.3s ease;
+          backdrop-filter: blur(2px);
+        }
+        
+        /* Mobile optimizations */
         @media (max-width: 768px) {
           .display-6 {
             font-size: 1.5rem;
@@ -621,6 +879,106 @@ function ProductDetailPage() {
           .display-5 {
             font-size: 1.75rem;
           }
+          
+          .image-container {
+            height: 300px !important;
+          }
+          
+          .thumbnail-images .col-3 {
+            flex: 0 0 25%;
+          }
+          
+          .nav-arrow {
+            width: 35px !important;
+            height: 35px !important;
+            font-size: 0.8rem;
+          }
+          
+          .zoom-btn {
+            width: 35px !important;
+            height: 35px !important;
+            font-size: 0.8rem;
+          }
+          
+          .modal-dialog {
+            margin: 1rem;
+          }
+          
+          .modal-body img {
+            max-height: 70vh !important;
+          }
+        }
+        
+        /* Loading states */
+        .image-loading {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .image-loading::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent
+          );
+          animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+          0% {
+            left: -100%;
+          }
+          100% {
+            left: 100%;
+          }
+        }
+        
+        /* Enhanced hover effects */
+        .thumbnail-item {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .thumbnail-item::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(45deg, transparent, rgba(13, 110, 253, 0.1), transparent);
+          transform: translateX(-100%);
+          transition: transform 0.6s ease;
+          z-index: 1;
+        }
+        
+        .thumbnail-item:hover::before {
+          transform: translateX(100%);
+        }
+        
+        /* Image quality indicators */
+        .image-quality-indicator {
+          position: absolute;
+          bottom: 8px;
+          left: 8px;
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: bold;
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        * {
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
       `}</style>
     </div>
