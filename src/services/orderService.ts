@@ -1,4 +1,10 @@
-import { IImage } from "@/app/components/inteface/IImage";
+import { IApiResponse } from "@/app/components/inteface/IApiResponse";
+import { ICreateOrderParams } from "@/app/components/inteface/ICreateOrderParams";
+import { IOrder } from "@/app/components/inteface/IOrder";
+import { IOrderDetailResponse } from "@/app/components/inteface/IOrderDetailResponse";
+import { IOrderListResponse } from "@/app/components/inteface/IOrderListResponse";
+import { IOrderListParams } from "@/app/components/inteface/IOrderParams";
+import { IPaymentResponse } from "@/app/components/inteface/IPaymentResponse";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/payment`;
@@ -12,186 +18,11 @@ const getAuthHeaders = () => {
     "Content-Type": "application/json",
   };
 };
-export interface Order {
-  id: number;
-  reference: string;
-  payment_status: string;
-  shipping_status: string;
-  created_at: string;
-  updated_at: string;
-  courier: string;
-  service: string;
-  etd: string | null;
-  estimated_delivery: string | null;
-  estimated_delivery_formatted: string | null;
-  is_delivery_overdue: boolean;
-  payment_url: string | null;
-  payment_method_code: string;
-  fee: number;
-  fee_formatted: string;
-  total_items: number;
-  total_quantity: number;
-  can_cancel: boolean;
-  can_pay: boolean;
-  is_paid: boolean;
-  is_delivered: boolean;
-  tracking_number: string | null;
-}
 
-// =============== Order List ===============
-export interface OrderListItem extends Order {
-  total_price: number;
-  total_price_formatted: string;
-  shipping_cost: number;
-  shipping_cost_formatted: string;
-
-  first_product: {
-    id: number | null;
-    title: string;
-    slug: string | null;
-    image: IImage | null;
-  };
-
-  has_tracking: boolean;
-}
-
-// Response
-export interface OrderListResponse {
-  orders: OrderListItem[];
-  pagination: {
-    current_page: number;
-    per_page: number;
-    total_items: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-    next_page: number | null;
-    prev_page: number | null;
-  };
-  statistics: {
-    total_orders: number;
-    pending_orders: number;
-    paid_orders: number;
-    delivered_orders: number;
-  };
-  filters: {
-    status: string | null;
-    payment_status: string | null;
-    shipping_status: string | null;
-  };
-}
-
-// Params
-export interface OrderListParams {
-  page?: number;
-  limit?: number;
-  status?: string;
-  payment_status?: string;
-  shipping_status?: string;
-}
-
-// =============== Order Detail ===============
-export interface OrderDetail extends Order {
-  subtotal: number;
-  shipping_cost: number;
-  total_price: number;
-  subtotal_formatted: string;
-  shipping_cost_formatted: string;
-  total_price_formatted: string;
-  tracking_url?: string | null; // ada di /show
-}
-
-export interface OrderItem {
-  id: number;
-  product_id: number;
-  product_title: string;
-  product_slug: string | null;
-  product_image: IImage | null;
-  variant_id: number | null;
-  variant_title: string | null;
-  quantity: number;
-  price: number;
-  weight: number;
-  subtotal: number;
-  price_formatted: string;
-  subtotal_formatted: string;
-}
-
-export interface Customer {
-  id: number;
-  name: string;
-  first_name: string;
-  surname: string;
-  email: string;
-  phone: string | null;
-}
-
-export interface ShippingAddress {
-  id: number;
-  recipient_name: string;
-  phone_number: string | null;
-  address_line: string;
-  postal_code: string;
-  province: string;
-  city: string;
-  district: string;
-  sub_district: string | null;
-  full_address: string;
-}
-
-export interface OrderDetailResponse {
-  order: OrderDetail;
-  items: OrderItem[];
-  customer: Customer;
-  shipping_address: ShippingAddress | null;
-
-  can_cancel: boolean;
-  can_pay: boolean;
-  is_paid: boolean;
-  is_delivered: boolean;
-  tracking_number: string | null;
-  tracking_url?: string | null;
-}
-
-// =============== Create Order ===============
-export interface CreateOrderParams {
-  cart_ids: number[];
-  address_id: number;
-  payment_method: string;
-  courier: string;
-  service: string;
-  notes?: string;
-}
-
-// =============== Payment Response ===============
-export interface PaymentResponse {
-  success: boolean;
-  order_id: number;
-  total_amount: number;
-  items_total: number;
-  shipping_cost: number;
-  total_weight: number;
-  payment_fee: number;
-  reference: string;
-  paymentUrl?: string;
-  message?: string;
-  error?: string;
-  qr_code?: string;
-  va_number?: string;
-  expired_date?: string;
-}
-
-// =============== Generic API Response ===============
-export interface ApiResponse<T> {
-  success?: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
-}
 /**
  * Create new order
  */
-export const createOrder = async (params: CreateOrderParams): Promise<PaymentResponse> => {
+export const createOrder = async (params: ICreateOrderParams): Promise<IPaymentResponse> => {
   try {
     console.log("Creating order with params:", params);
     
@@ -208,7 +39,7 @@ export const createOrder = async (params: CreateOrderParams): Promise<PaymentRes
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: PaymentResponse = await response.json();
+    const result: IPaymentResponse = await response.json();
     console.log("Create order result:", result);
 
     if (result.success) {
@@ -225,7 +56,7 @@ export const createOrder = async (params: CreateOrderParams): Promise<PaymentRes
 /**
  * Get order list
  */
-export const getOrderList = async (params?: OrderListParams): Promise<OrderListResponse> => {
+export const getOrderList = async (params?: IOrderListParams): Promise<IOrderListResponse> => {
   try {
     const queryParams = new URLSearchParams();
     
@@ -249,7 +80,7 @@ export const getOrderList = async (params?: OrderListParams): Promise<OrderListR
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: OrderListResponse = await response.json();
+    const result: IOrderListResponse = await response.json();
     console.log("Get order list result:", result);
 
     return result;
@@ -262,7 +93,7 @@ export const getOrderList = async (params?: OrderListParams): Promise<OrderListR
 /**
  * Get order by ID - Updated to match backend response structure
  */
-export const getOrderById = async (orderId: number): Promise<OrderDetailResponse> => {
+export const getOrderById = async (orderId: number): Promise<IOrderDetailResponse> => {
   try {
     const response = await fetch(`${API_BASE}/show_order/${orderId}`, {
       method: "GET",
@@ -281,7 +112,7 @@ export const getOrderById = async (orderId: number): Promise<OrderDetailResponse
 
     // The backend returns the data directly, not wrapped in a data property
     if (result.order) {
-      return result as OrderDetailResponse;
+      return result as IOrderDetailResponse;
     } else {
       throw new Error('Invalid response format from server');
     }
@@ -294,7 +125,7 @@ export const getOrderById = async (orderId: number): Promise<OrderDetailResponse
 /**
  * Update order status
  */
-export const updateOrderStatus = async (orderId: number, status: string): Promise<Order> => {
+export const updateOrderStatus = async (orderId: number, status: string): Promise<IOrder> => {
   try {
     const response = await fetch(`${API_BASE}/update_order_status/${orderId}`, {
       method: "PUT",
@@ -309,7 +140,7 @@ export const updateOrderStatus = async (orderId: number, status: string): Promis
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<Order> = await response.json();
+    const result: IApiResponse<IOrder> = await response.json();
     console.log("Update order status result:", result);
 
     if (result.data) {
@@ -340,7 +171,7 @@ export const cancelOrder = async (orderId: number): Promise<void> => {
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    const result: ApiResponse<void> = await response.json();
+    const result: IApiResponse<void> = await response.json();
     console.log("Cancel order result:", result);
 
     if (result.success === false) {

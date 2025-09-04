@@ -8,7 +8,6 @@ import {
   updateOrderStatus, 
   cancelOrder, 
   formatDate,
-  type OrderDetailResponse,
 } from '@/services/orderService';
 
 import { 
@@ -16,13 +15,14 @@ import {
   DuitkuPaymentMethod
 } from "@/services/duitkuService";
 import { Shimmer } from 'react-shimmer';
+import { IOrderDetailResponse } from '@/app/components/inteface/IOrderDetailResponse';
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = parseInt(params.id as string);
   
-  const [orderDetail, setOrderDetail] = useState<OrderDetailResponse | null>(null);
+  const [orderDetail, setOrderDetail] = useState<IOrderDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
@@ -550,13 +550,7 @@ export default function OrderDetailPage() {
                         {order?.courier ? `${order.courier} - ${order.service}` : <Shimmer width={160} height={16} />}
                       </div>
                       <div className="fw-semibold">
-                        {order?.tracking_number === undefined ? (
-                          <Shimmer width={140} height={16} />
-                        ) : order?.tracking_number ? (
-                          order.tracking_number
-                        ) : (
-                          "-"
-                        )}
+                        {orderDetail?.tracking_number ? orderDetail.tracking_number : "-"}
                       </div>
 
                     </div>
@@ -585,21 +579,6 @@ export default function OrderDetailPage() {
                         </>
                       )}
                     </div>
-                  </div>
-                )}
-
-                {/* Payment Button */}
-                {order.can_pay && order.payment_url && (
-                  <div className="mt-4 d-grid">
-                    <a
-                      href={order.payment_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-success btn-lg"
-                    >
-                      <i className="fas fa-credit-card me-2"></i>
-                      Bayar Sekarang
-                    </a>
                   </div>
                 )}
               </div>

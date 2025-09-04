@@ -7,18 +7,18 @@ import { Image, Shimmer } from "react-shimmer";
 import { 
   getOrderList, 
   formatDate,
-  type OrderListItem, 
-  type OrderListParams, 
-  type OrderListResponse 
 } from '@/services/orderService';
+import { IOrderListItem } from '../components/inteface/IOrderListItem';
+import { IOrderListResponse } from '../components/inteface/IOrderListResponse';
+import { IOrderListParams } from '../components/inteface/IOrderParams';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [orders, setOrders] = useState<IOrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState<OrderListResponse['pagination'] | null>(null);
-  const [statistics, setStatistics] = useState<OrderListResponse['statistics'] | null>(null);
-  const [filters, setFilters] = useState<OrderListParams>({
+  const [pagination, setPagination] = useState<IOrderListResponse['pagination'] | null>(null);
+  const [statistics, setStatistics] = useState<IOrderListResponse['statistics'] | null>(null);
+  const [filters, setFilters] = useState<IOrderListParams>({
     page: 1,
     limit: 10,
     status: '',
@@ -35,7 +35,7 @@ export default function OrdersPage() {
       setLoading(true);
       setError(null);
       
-      const cleanFilters: OrderListParams = {
+      const cleanFilters: IOrderListParams = {
         page: filters.page,
         limit: filters.limit,
       };
@@ -59,7 +59,7 @@ export default function OrdersPage() {
     setFilters(prev => ({ ...prev, page }));
   };
 
-  const handleFilterChange = (key: keyof OrderListParams, value: string) => {
+  const handleFilterChange = (key: keyof IOrderListParams, value: string) => {
     setFilters(prev => ({
       ...prev,
       page: 1,
