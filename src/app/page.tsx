@@ -267,6 +267,7 @@ export default function Home() {
       </section>
 
       {/* Popular Products Section */}
+      {/* Popular Products Section */}
       <section className="popular-section">
         <div className="section-container">
           <div className="section-header">
@@ -294,10 +295,10 @@ export default function Home() {
                             left: 0
                           }}
                           onLoad={(e) => {
-                        const target = e.target as HTMLImageElement; // cast here
-                        const shimmer = target.previousElementSibling as HTMLElement | null;
-                        if (shimmer) shimmer.style.display = 'none';
-                      }}
+                            const target = e.target as HTMLImageElement;
+                            const shimmer = target.previousElementSibling as HTMLElement | null;
+                            if (shimmer) shimmer.style.display = 'none';
+                          }}
                         />
                       </div>
                     ) : (
@@ -305,18 +306,20 @@ export default function Home() {
                     )}
                   </div>
                   <div className="popular-info">
-                    <div className="popular-header">
-                      <h3>
-                        <a href={`/product/${product.slug}`}>{product.title}</a>
-                      </h3>
-                      <span className="rank">#{index + 1}</span>
+                    <div className="popular-content">
+                      <div className="popular-header">
+                        <h3>
+                          <a href={`/product/${product.slug}`}>{product.title}</a>
+                        </h3>
+                        <span className="rank">#{index + 1}</span>
+                      </div>
+                      <p className="sales-info">
+                        {product.total_sold ? `${product.total_sold} sold` : 'Popular choice'}
+                      </p>
+                      <p className="popular-price">
+                        {product.price_range.display || 'Price not available'}
+                      </p>
                     </div>
-                    <p className="sales-info">
-                      {product.total_sold ? `${product.total_sold} sold` : 'Popular choice'}
-                    </p>
-                    <p className="popular-price">
-                      {product.price_range.display || 'Price not available'}
-                    </p>
                     <a href={`/product/${product.slug}`} className="view-btn">
                       View Product
                     </a>
@@ -401,6 +404,157 @@ export default function Home() {
       </section>
 
       <style jsx>{`
+        /* Popular Products Grid */
+        .popular-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 24px;
+          margin-top: 32px;
+        }
+
+        /* Popular Card - Flexbox untuk alignment */
+        .popular-card {
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          padding: 20px;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          height: 100%; /* Membuat semua card sama tinggi */
+        }
+
+        .popular-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Popular Image */
+        .popular-image {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+
+        .image-placeholder-small {
+          width: 120px;
+          height: 120px;
+          background: #f0f0f0;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #666;
+          font-size: 14px;
+        }
+
+        /* Popular Info - Key untuk alignment */
+        .popular-info {
+          display: flex;
+          flex-direction: column;
+          flex: 1; /* Mengambil sisa ruang yang tersedia */
+        }
+
+        /* Popular Header */
+        .popular-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 8px;
+        }
+
+        .popular-header h3 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          line-height: 1.3;
+          flex: 1;
+          margin-right: 12px;
+        }
+
+        .popular-header h3 a {
+          color: #333;
+          text-decoration: none;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .popular-header h3 a:hover {
+          color: #007bff;
+        }
+
+        .rank {
+          background: #007bff;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
+        /* Sales Info & Price */
+        .sales-info {
+          color: #666;
+          font-size: 14px;
+          margin: 4px 0;
+        }
+
+        .popular-price {
+          color: #007bff;
+          font-weight: 600;
+          font-size: 16px;
+          margin: 8px 0 16px 0;
+        }
+
+        /* View Button - Selalu di bottom dengan margin-top: auto */
+        .view-btn {
+          display: inline-block;
+          background: #007bff;
+          color: white;
+          text-decoration: none;
+          padding: 10px 16px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          text-align: center;
+          transition: background-color 0.3s ease;
+          margin-top: auto; /* Key: Mendorong button ke bawah */
+        }
+
+        .view-btn:hover {
+          background: #0056b3;
+          color: white;
+        }
+
+        /* No Products */
+        .no-products {
+          grid-column: 1 / -1;
+          text-align: center;
+          padding: 40px 20px;
+          color: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .popular-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+          }
+          
+          .popular-card {
+            padding: 16px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .popular-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+        }
         .homepage {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -832,7 +986,7 @@ export default function Home() {
           background: #28a745;
           color: white;
           padding: 4px 8px;
-          border-radius: 15px;
+          border-radius: 5px;
           font-size: 0.8rem;
           font-weight: 600;
         }
@@ -860,6 +1014,7 @@ export default function Home() {
           font-weight: 600;
           transition: all 0.3s ease;
         }
+          
 
         .view-btn:hover {
           background: #2a4238;
