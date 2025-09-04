@@ -54,6 +54,9 @@ export default function Header({ showHeader = true }: { showHeader?: boolean }) 
               <li>
                 <Link className="nav-link" href="/orders">Order</Link>
               </li>
+              <li>
+                <Link className="nav-link" href="/abouts">About</Link>
+              </li>
             </ul>
 
             <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">

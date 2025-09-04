@@ -321,17 +321,17 @@ function ProductDetailPage() {
                     <>
                       <button
                         className="btn btn-light btn-lg position-absolute start-0 top-50 translate-middle-y ms-3 rounded-circle"
-                        style={{ zIndex: 1001, width: '50px', height: '50px' }}
+                        style={{ zIndex: 1001, width: '60px', height: '60px' }}
                         onClick={handlePreviousImage}
                       >
-                        <i className="fas fa-chevron-left"></i>
+                        <i className="fas fa-chevron-left me-3"></i>
                       </button>
                       <button
                         className="btn btn-light btn-lg position-absolute end-0 top-50 translate-middle-y me-3 rounded-circle"
-                        style={{ zIndex: 1001, width: '50px', height: '50px' }}
+                        style={{ zIndex: 1001, width: '60px', height: '60px' }}
                         onClick={handleNextImage}
                       >
-                        <i className="fas fa-chevron-right"></i>
+                        <i className="fas fa-chevron-right me-3"></i>
                       </button>
                     </>
                   )}
@@ -401,7 +401,7 @@ function ProductDetailPage() {
                           className="image-container position-relative overflow-hidden"
                           style={{
                             width: "100%",
-                            height: "450px",
+                            height: "450px", // Fixed height for consistency
                             borderRadius: "15px",
                             cursor: "zoom-in",
                             transition: "all 0.3s ease",
@@ -418,7 +418,7 @@ function ProductDetailPage() {
                           
                           <ShimmerImage
                             src={selectedImage || "/assets/images/sofa.png"}
-                            fallback={<Shimmer width={100} height={80} className="rounded" />}
+                            fallback={<Shimmer width={500} height={450} className="rounded" />}
                             onLoad={() => setIsImageLoaded(true)}
                             onError={() => {
                               setImageError(true);
@@ -443,9 +443,11 @@ function ProductDetailPage() {
                           </div>
                           
                           {/* Corner badges */}
-                          <div className="position-absolute top-0 end-0 m-3 d-flex flex-column gap-2">
+                          <div className="position-absolute top-0 end-0 m-3 d-flex flex-column gap-2"
+                              // style={{ height: "25%", width: "10%" }}
+                              >
                             <button 
-                              className="btn btn-light btn-sm rounded-circle shadow-sm zoom-btn"
+                              className="btn btn-light btn-sm  shadow-sm zoom-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowImageModal(true);
@@ -465,22 +467,24 @@ function ProductDetailPage() {
                           {allImages.length > 1 && (
                             <>
                               <button
-                                className="btn btn-light btn-sm position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle nav-arrow opacity-0"
+                                className="btn btn-sm position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle nav-arrow opacity-0"
+                                style={{height:"15%", width:"15%"}}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handlePreviousImage();
                                 }}
                               >
-                                <i className="fas fa-chevron-left"></i>
+                                <i className="fas fa-chevron-left text-black" style={{ color:"#000" }}></i>
                               </button>
                               <button
-                                className="btn btn-light btn-sm position-absolute end-0 top-50 translate-middle-y me-2 rounded-circle nav-arrow opacity-0"
+                                className="btn btn-sm position-absolute end-0 top-50 translate-middle-y me-2 rounded-circle nav-arrow opacity-0"
+                                style={{height:"15%", width:"15%"}}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleNextImage();
                                 }}
                               >
-                                <i className="fas fa-chevron-right"></i>
+                                <i className="fas fa-chevron-right text-black" style={{ color:"#000" }}></i>
                               </button>
                             </>
                           )}
@@ -491,46 +495,64 @@ function ProductDetailPage() {
                       {allImages.length > 1 && (
                         <div className="thumbnail-images">
                           <h6 className="fw-bold mb-3 text-muted small">More Images</h6>
-                          <div className="row g-2">
+                          <div className="d-flex flex-wrap gap-2">
                             {allImages.map((image, index) => (
-                              <div key={index} className="col-3">
+                              <div key={index} style={{ width: 'calc(25% - 6px)' }}>
                                 <div 
-                                  className={`thumbnail-item position-relative ${
-                                    selectedImage === image.original ? 'active' : ''
+                                  className={`position-relative overflow-hidden ${
+                                    selectedImage === image.original ? 'border-primary' : 'border-light'
                                   }`}
                                   style={{
-                                    borderRadius: '10px',
-                                    overflow: 'hidden',
-                                    width: "100%",
-                                    height: "80px",
+                                    borderRadius: '8px',
+                                    width: '100%',
+                                    height: '80px',
                                     cursor: 'pointer',
                                     transition: 'all 0.3s ease',
-                                    border: selectedImage === image.original ? '3px solid #0d6efd' : '2px solid #e9ecef',
-                                    transform: selectedImage === image.original ? 'scale(1.05)' : 'scale(1)'
+                                    border: selectedImage === image.original ? '2px solid #0d6efd' : '2px solid #e9ecef',
+                                    backgroundColor: '#f8f9fa'
                                   }}
                                   onClick={() => handleImageSelect(image.original, index)}
                                 >
-                                  <ShimmerImage
+                                  <img
                                     src={image.small || image.medium || image.original}
-                                    fallback={<Shimmer width={100} height={80} />}
+                                    alt={`Product image ${index + 1}`}
                                     style={{
                                       width: '100%',
                                       height: '100%',
-                                      objectFit: 'cover'
+                                      objectFit: 'cover',
+                                      objectPosition: 'center'
+                                    }}
+                                    onError={(e) => {
+                                      // e.target.style.display = 'none';
                                     }}
                                   />
                                   
                                   {/* Active indicator */}
                                   {selectedImage === image.original && (
-                                    <div className="position-absolute top-0 end-0 m-1">
-                                      <div className="bg-primary rounded-circle" style={{ width: '20px', height: '20px' }}>
-                                        <i className="fas fa-check text-white small position-absolute top-50 start-50 translate-middle"></i>
-                                      </div>
+                                    <div 
+                                      className="position-absolute bg-primary rounded-circle d-flex align-items-center justify-content-center"
+                                      style={{
+                                        top: '4px',
+                                        right: '4px',
+                                        width: '18px',
+                                        height: '18px'
+                                      }}
+                                    >
+                                      <i className="fas fa-check text-white" style={{ fontSize: '8px' }}></i>
                                     </div>
                                   )}
                                   
                                   {/* Hover overlay */}
-                                  <div className="thumbnail-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25 opacity-0 d-flex align-items-center justify-content-center">
+                                  <div 
+                                    className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                    style={{
+                                      backgroundColor: 'rgba(0,0,0,0.3)',
+                                      opacity: 0,
+                                      transition: 'opacity 0.3s ease'
+                                    }}
+                                    // onMouseEnter={(e) => e.target.style.opacity = 1}
+                                    // onMouseLeave={(e) => e.target.style.opacity = 0}
+                                  >
                                     <i className="fas fa-eye text-white"></i>
                                   </div>
                                 </div>
@@ -594,11 +616,6 @@ function ProductDetailPage() {
                         <h2 className="text-primary fw-bold mb-0 display-5">
                           {formatRupiah(getCurrentPrice())}
                         </h2>
-                        {selectedVariant && product.price !== getCurrentPrice() && (
-                          <small className="text-muted text-decoration-line-through fs-6">
-                            {formatRupiah(product.price)}
-                          </small>
-                        )}
                         
                         {/* Stock Status */}
                         <div className="mt-2">
@@ -870,6 +887,23 @@ function ProductDetailPage() {
           backdrop-filter: blur(2px);
         }
         
+        /* Thumbnail images fixed styling */
+        .thumbnail-item {
+          position: relative;
+          overflow: hidden;
+          border-radius: 10px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        
+        .thumbnail-item img,
+        .thumbnail-item .shimmer {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+        
         /* Mobile optimizations */
         @media (max-width: 768px) {
           .display-6 {
@@ -888,17 +922,21 @@ function ProductDetailPage() {
             flex: 0 0 25%;
           }
           
+          .thumbnail-item {
+            height: 70px !important;
+          }
+          
           .nav-arrow {
-            width: 35px !important;
-            height: 35px !important;
+            width: 60px !important;
+            height: 60px !important;
             font-size: 0.8rem;
           }
           
           .zoom-btn {
-            width: 35px !important;
-            height: 35px !important;
+            width: 80px !important;
+            height: 80px !important;
             font-size: 0.8rem;
-          }
+          } 
           
           .modal-dialog {
             margin: 1rem;
@@ -941,11 +979,6 @@ function ProductDetailPage() {
         }
         
         /* Enhanced hover effects */
-        .thumbnail-item {
-          position: relative;
-          overflow: hidden;
-        }
-        
         .thumbnail-item::before {
           content: '';
           position: absolute;
