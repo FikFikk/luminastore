@@ -435,9 +435,9 @@ export default function OrderDetailPage() {
                   </div>
 
                   {/* Bayar Button */}
-                  {order.can_pay && order.payment_url && (
+                  {orderDetail?.can_pay && orderDetail?.order.payment_url && (
                     <a
-                      href={order.payment_url ?? "#"}
+                      href={orderDetail.order.payment_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-success btn-sm mt-2"

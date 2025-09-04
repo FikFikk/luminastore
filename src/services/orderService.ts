@@ -1,3 +1,4 @@
+import { IImage } from "@/app/components/inteface/IImage";
 import Cookies from "js-cookie";
 
 const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE!}/payment`;
@@ -11,8 +12,6 @@ const getAuthHeaders = () => {
     "Content-Type": "application/json",
   };
 };
-
-// Updated interfaces to match backend response
 export interface Order {
   id: number;
   reference: string;
@@ -20,138 +19,43 @@ export interface Order {
   shipping_status: string;
   created_at: string;
   updated_at: string;
-  subtotal: number;
-  shipping_cost: number;
-  total_price: number;
-  subtotal_formatted: string;
-  shipping_cost_formatted: string;
-  total_price_formatted: string;
   courier: string;
   service: string;
-  etd: string | null;                    // ETD mentah dari RajaOngkir
+  etd: string | null;
   estimated_delivery: string | null;
   estimated_delivery_formatted: string | null;
+  is_delivery_overdue: boolean;
   payment_url: string | null;
   payment_method_code: string;
-  payment_method: string;
   fee: number;
-  fee_formatted: number;
+  fee_formatted: string;
   total_items: number;
   total_quantity: number;
   can_cancel: boolean;
   can_pay: boolean;
   is_paid: boolean;
   is_delivered: boolean;
-  is_delivery_overdue: boolean;
   tracking_number: string | null;
-  has_tracking: boolean;
 }
 
-export interface OrderItem {
-  id: number;
-  product_id: number;
-  product_title: string;
-  product_slug: string | null;
-  product_image: {
-    small: string;
-    medium: string;
-    large?: string;
-  } | null;
-  variant_id: number | null;
-  variant_title: string | null;
-  quantity: number;
-  price: number;
-  weight: number;
-  subtotal: number;
-  price_formatted: string;
-  subtotal_formatted: string;
-}
-
-export interface Customer {
-  id: number;
-  name: string;
-  first_name: string;
-  surname: string;
-  email: string;
-  phone: string | null;
-}
-
-export interface ShippingAddress {
-  id: number;
-  recipient_name: string;
-  phone_number: string;
-  address_line: string;
-  postal_code: string;
-  province: string;
-  city: string;
-  district: string;
-  sub_district: string | null;
-  full_address: string;
-}
-
-export interface OrderDetailResponse {
-  order: Order;
-  items: OrderItem[];
-  customer: Customer;
-  shipping_address: ShippingAddress | null;
-}
-
-// Interface for list orders (different structure)
-export interface OrderListItem {
-  id: number;
-  reference: string;
-  payment_status: string;
-  shipping_status: string;
-  created_at: string;
-  updated_at: string;
+// =============== Order List ===============
+export interface OrderListItem extends Order {
   total_price: number;
   total_price_formatted: string;
   shipping_cost: number;
   shipping_cost_formatted: string;
-  total_items: number;
-  total_quantity: number;
+
   first_product: {
     id: number | null;
     title: string;
     slug: string | null;
-    image: {
-      small: string;
-      medium: string;
-    } | null;
+    image: IImage | null;
   };
-  courier: string;
-  service: string;
-  estimated_delivery: string | null;
-  payment_method_code: string;
-  payment_method: string;
-  payment_url: string | null;
-  can_cancel: boolean;
-  can_pay: boolean;
-  is_paid: boolean;
-  is_delivered: boolean;
-  tracking_number: string | null;
+
   has_tracking: boolean;
-  status_label: string;
-  status_color: string;
 }
 
-export interface CreateOrderParams {
-  cart_ids: number[];
-  address_id: number;
-  payment_method: string;
-  courier: string;
-  service: string;
-  notes?: string;
-}
-
-export interface OrderListParams {
-  page?: number;
-  limit?: number; // Changed from per_page to limit to match backend
-  status?: string;
-  payment_status?: string;
-  shipping_status?: string;
-}
-
+// Response
 export interface OrderListResponse {
   orders: OrderListItem[];
   pagination: {
@@ -177,6 +81,89 @@ export interface OrderListResponse {
   };
 }
 
+// Params
+export interface OrderListParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  payment_status?: string;
+  shipping_status?: string;
+}
+
+// =============== Order Detail ===============
+export interface OrderDetail extends Order {
+  subtotal: number;
+  shipping_cost: number;
+  total_price: number;
+  subtotal_formatted: string;
+  shipping_cost_formatted: string;
+  total_price_formatted: string;
+  tracking_url?: string | null; // ada di /show
+}
+
+export interface OrderItem {
+  id: number;
+  product_id: number;
+  product_title: string;
+  product_slug: string | null;
+  product_image: IImage | null;
+  variant_id: number | null;
+  variant_title: string | null;
+  quantity: number;
+  price: number;
+  weight: number;
+  subtotal: number;
+  price_formatted: string;
+  subtotal_formatted: string;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  first_name: string;
+  surname: string;
+  email: string;
+  phone: string | null;
+}
+
+export interface ShippingAddress {
+  id: number;
+  recipient_name: string;
+  phone_number: string | null;
+  address_line: string;
+  postal_code: string;
+  province: string;
+  city: string;
+  district: string;
+  sub_district: string | null;
+  full_address: string;
+}
+
+export interface OrderDetailResponse {
+  order: OrderDetail;
+  items: OrderItem[];
+  customer: Customer;
+  shipping_address: ShippingAddress | null;
+
+  can_cancel: boolean;
+  can_pay: boolean;
+  is_paid: boolean;
+  is_delivered: boolean;
+  tracking_number: string | null;
+  tracking_url?: string | null;
+}
+
+// =============== Create Order ===============
+export interface CreateOrderParams {
+  cart_ids: number[];
+  address_id: number;
+  payment_method: string;
+  courier: string;
+  service: string;
+  notes?: string;
+}
+
+// =============== Payment Response ===============
 export interface PaymentResponse {
   success: boolean;
   order_id: number;
@@ -185,8 +172,8 @@ export interface PaymentResponse {
   shipping_cost: number;
   total_weight: number;
   payment_fee: number;
-  paymentUrl?: string;
   reference: string;
+  paymentUrl?: string;
   message?: string;
   error?: string;
   qr_code?: string;
@@ -194,13 +181,13 @@ export interface PaymentResponse {
   expired_date?: string;
 }
 
+// =============== Generic API Response ===============
 export interface ApiResponse<T> {
   success?: boolean;
   message?: string;
   data?: T;
   error?: string;
 }
-
 /**
  * Create new order
  */
