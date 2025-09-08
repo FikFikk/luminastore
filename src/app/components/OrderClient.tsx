@@ -446,17 +446,29 @@ export default function OrdersPage() {
                       </div>
                       <div className="col-md-4 text-md-end mt-2 mt-md-0">
                         <div className="btn-group" role="group">
-                          {order.can_pay && order.payment_url && !order?.is_expired &&(
-                            <a
-                              href={order.payment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-success btn-sm"
-                            >
-                              <i className="fas fa-credit-card me-1"></i>
-                              Bayar
-                            </a>
-                          )}
+                          {(() => {
+                            const createdAt = new Date(order.created_at);
+                            const now = new Date();
+                            const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                            const isExpiredByTime = diffInHours >= 24;
+
+                            const showPayButton = order.can_pay && order.payment_url && !order?.is_expired && !isExpiredByTime;
+
+                            if (!showPayButton) return null;
+
+                            return (
+                              <a
+                                href={order.payment_url ?? "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-success btn-sm"
+                              >
+                                <i className="fas fa-credit-card me-1"></i>
+                                Bayar
+                              </a>
+                            );
+                          })()}
+
                           <Link href={`/orders/${order.id}`} className="btn btn-outline-primary btn-sm">
                             <i className="fas fa-eye me-1"></i>
                             Detail

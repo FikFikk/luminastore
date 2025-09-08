@@ -435,19 +435,35 @@ export default function OrderDetailPage() {
                   </div>
 
                   {/* Bayar Button */}
-                  {orderDetail?.can_pay &&
-                  orderDetail?.order.payment_url &&
-                  !orderDetail?.is_expired && (
-                    <a
-                      href={orderDetail.order.payment_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-success btn-sm mt-2"
-                    >
-                      <i className="fas fa-credit-card me-1"></i>
-                      Bayar
-                    </a>
-                  )}
+                  {(() => {
+                    if (!orderDetail) return null;
+
+                    const createdAt = new Date(orderDetail.order.created_at);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                    const isExpiredByTime = diffInHours >= 24;
+
+                    const showPayButton =
+                      orderDetail.can_pay &&
+                      !!orderDetail.order.payment_url &&
+                      !orderDetail.is_expired &&
+                      !isExpiredByTime;
+
+                    if (!showPayButton) return null;
+
+                    return (
+                      <a
+                        href={orderDetail.order.payment_url ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-success btn-sm mt-2"
+                      >
+                        <i className="fas fa-credit-card me-1"></i>
+                        Bayar
+                      </a>
+                    );
+                  })()}
+
                 </div>
               </div>
             </div>
