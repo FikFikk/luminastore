@@ -74,15 +74,55 @@ class RateLimiter {
   }
 }
 
-// Create singleton rate limiter instances
+// Debounce utility class
+class Debouncer {
+  private timeoutId: NodeJS.Timeout | null = null;
+  
+  debounce<T extends (...args: any[]) => any>(
+    func: T, 
+    delay: number
+  ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+    return (...args: Parameters<T>): Promise<ReturnType<T>> => {
+      return new Promise((resolve, reject) => {
+        // Clear previous timeout
+        if (this.timeoutId) {
+          clearTimeout(this.timeoutId);
+        }
+        
+        // Set new timeout
+        this.timeoutId = setTimeout(async () => {
+          try {
+            const result = await func(...args);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        }, delay);
+      });
+    };
+  }
+  
+  // Method to cancel pending debounced calls
+  cancel(): void {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+}
+
+// Create singleton instances
 const destinationRateLimiter = new RateLimiter();
 const shippingRateLimiter = new RateLimiter();
+const destinationDebouncer = new Debouncer();
 
 // Cache for destinations to reduce API calls
 const destinationCache = new Map<string, { data: Destination[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const DEBOUNCE_DELAY = 3000; // 3 seconds
 
-export const searchDestinations = async (
+// Internal search function (without debounce)
+const _searchDestinationsInternal = async (
   keyword: string
 ): Promise<Destination[]> => {
   if (!keyword.trim() || keyword.length < 3) return [];
@@ -96,6 +136,7 @@ export const searchDestinations = async (
   }
 
   try {
+    console.log(`Searching destinations for: "${keyword}"`);
     await destinationRateLimiter.waitForNextRequest();
     
     const res = await fetch(`/api/rajaongkir?search=${encodeURIComponent(keyword)}&limit=5`);
@@ -135,6 +176,7 @@ export const searchDestinations = async (
     // Cache the result
     destinationCache.set(cacheKey, { data: result, timestamp: Date.now() });
     
+    console.log(`Found ${result.length} destinations for: "${keyword}"`);
     return result;
 
   } catch (error) {
@@ -142,6 +184,20 @@ export const searchDestinations = async (
     throw error;
   }
 };
+
+// Public search function with debounce
+export const searchDestinations = destinationDebouncer.debounce(
+  _searchDestinationsInternal,
+  DEBOUNCE_DELAY
+);
+
+// Utility function to cancel pending searches (useful for component cleanup)
+export const cancelPendingDestinationSearch = () => {
+  destinationDebouncer.cancel();
+};
+
+// Optional: Create a version that can be used with immediate search (bypass debounce)
+export const searchDestinationsImmediate = _searchDestinationsInternal;
 
 // Cache for shipping options
 const shippingCache = new Map<string, { data: ShippingOption[]; timestamp: number }>();

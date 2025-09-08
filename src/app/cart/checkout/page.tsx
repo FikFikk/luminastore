@@ -68,6 +68,7 @@ function CheckoutPage() {
 
   // Error state
   const [error, setError] = useState<string>("");
+  const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -137,6 +138,11 @@ function CheckoutPage() {
       total_weight: totalWeight,
       items_count: selectedCartItems.length
     };
+  };
+
+  const showMessage = (type: 'success' | 'error' | 'warning', message: string) => {
+    setShowAlert({ type, message });
+    setTimeout(() => setShowAlert(null), 4000);
   };
 
   const selectedTotals = calculateSelectedTotals();
@@ -361,11 +367,20 @@ function CheckoutPage() {
   };
 
   // Handle address modal success callback
-  const handleAddressModalSuccess = (message?: string) => {
-    if (message) {
-      alert(message);
-    }
-    loadAddresses(); // Reload addresses after successful creation
+  // const handleAddressModalSuccess = (message?: string) => {
+  //   // if (message) {
+  //   //   alert(message);
+  //   // }
+  //   loadAddresses(); // Reload addresses after successful creation
+  // };
+
+  const handleSuccess = (message: string, callback?: () => void) => {
+    showMessage("success", message);
+    if (callback) callback();
+  };
+
+  const handleAddressModalSuccess = () => {
+    handleSuccess("Alamat berhasil disimpan", loadAddresses);
   };
 
   const handlePlaceOrder = async () => {
@@ -514,6 +529,16 @@ function CheckoutPage() {
 
   return (
     <>
+      {/* Alert Messages */}
+      {showAlert && (
+        <div className="position-fixed top-0 start-50 translate-middle-x mt-3" style={{ zIndex: 9999 }}>
+          <div className={`alert alert-${showAlert.type === 'success' ? 'success' : showAlert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show shadow-lg`} role="alert">
+            <i className={`fas ${showAlert.type === 'success' ? 'fa-check-circle' : showAlert.type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} me-2`}></i>
+            {showAlert.message}
+            <button type="button" className="btn-close" onClick={() => setShowAlert(null)}></button>
+          </div>
+        </div>
+      )}
       {/* Hero Section */}
       <div className="hero">
         <div className="container">
@@ -931,6 +956,7 @@ function CheckoutPage() {
         show={showAddressModal}
         onClose={() => setShowAddressModal(false)}
         onSuccess={handleAddressModalSuccess}
+        showMessage={showMessage}
       />
     </>
   );

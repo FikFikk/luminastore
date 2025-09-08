@@ -23,12 +23,14 @@ interface AddAddressProps {
   show: boolean;
   onClose: () => void;
   onSuccess: (message?: string) => void;
+  showMessage: (type: 'success' | 'error' | 'warning', message: string) => void;
 }
 
 const AddAddress: React.FC<AddAddressProps> = ({ 
   show, 
   onClose, 
-  onSuccess 
+  onSuccess,
+  showMessage
 }) => {
   const [addressForm, setAddressForm] = useState<AddressFormData>({
     title: "",
@@ -60,7 +62,6 @@ const AddAddress: React.FC<AddAddressProps> = ({
       return [];
     }
   };
-
 
   // Handle destination selection
   const handleDestinationSelect = (destination: Destination | null) => {
@@ -99,25 +100,25 @@ const AddAddress: React.FC<AddAddressProps> = ({
   const handleSubmit = async () => {
     // Validation
     if (!addressForm.title.trim()) {
-      alert("Nama alamat harus diisi");
+      showMessage('error', 'Nama alamat harus diisi');
       return;
     }
     if (!addressForm.alamat.trim()) {
-      alert("Alamat lengkap harus diisi");
+      showMessage('error', 'Alamat lengkap harus diisi');
       return;
     }
     if (!addressForm.provinsi.trim() || !addressForm.kota.trim() || 
         !addressForm.kecamatan.trim() || !addressForm.kodepos.trim()) {
-      alert("Provinsi, Kota, Kecamatan, dan Kode Pos harus diisi");
+      showMessage('error', 'Provinsi, Kota, Kecamatan, dan Kode Pos harus diisi');
       return;
     }
 
     try {
       setLoading(true);
-      
+
       const memberId = 1;
-      
-      const newAddress = await createMemberAddress({
+
+      await createMemberAddress({
         member_id: memberId,
         title: addressForm.title,
         alamat: addressForm.alamat,
@@ -131,22 +132,23 @@ const AddAddress: React.FC<AddAddressProps> = ({
         district_id: 0,
         subdistrict_id: 0,
       });
-      
+
       resetForm();
-      onSuccess("Alamat berhasil ditambahkan");
+      // panggil callback sukses ke parent
+      onSuccess?.();
       onClose();
-      
+
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Gagal menambah alamat. Silakan coba lagi.";
-        
+
       console.error("Error creating address:", err);
-      alert(message);
+      showMessage('error', message);
     } finally {
       setLoading(false);
     }
-
   };
+
 
   // Handle modal close
   const handleClose = () => {

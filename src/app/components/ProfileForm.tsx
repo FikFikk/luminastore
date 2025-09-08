@@ -36,7 +36,7 @@ export default function ProfileForm() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState<IAddress | null>(null);
 
-
+    const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
 
     const [formData, setFormData] = useState({
         FirstName: "",
@@ -45,6 +45,11 @@ export default function ProfileForm() {
         PhoneNumber: "",
         Address: ""
     });
+
+    const showMessage = (type: 'success' | 'error' | 'warning', message: string) => {
+        setShowAlert({ type, message });
+        setTimeout(() => setShowAlert(null), 4000);
+    };
 
     // Update form when user data changes
     useEffect(() => {
@@ -106,43 +111,29 @@ export default function ProfileForm() {
     const handleSetDefaultAddress = async (addressId: number) => {
         try {
             setSettingDefault(addressId);
-            
-            // Call API to set default address
+
             const result = await setDefaultAddress(addressId);
-            
+
             if (result.ok) {
-                // Update local state
-                const updatedAddresses = addresses.map(addr => ({
-                    ...addr,
-                    IsDefault: addr.ID === addressId ? 1 : 0
-                }));
-                setAddresses(updatedAddresses);
-                
-                // Show success message
-                setLocalMessage("Alamat default berhasil diubah! ✅");
-                setIsSuccess(true);
-                
-                // Clear message after 3 seconds
-                setTimeout(() => {
-                    setLocalMessage("");
-                    setIsSuccess(false);
-                }, 3000);
+            const updatedAddresses = addresses.map(addr => ({
+                ...addr,
+                IsDefault: addr.ID === addressId ? 1 : 0
+            }));
+            setAddresses(updatedAddresses);
+
+            showMessage("success", "Alamat default berhasil diubah!");
             } else {
-                // throw new Error(result.data?.message || "Failed to set default address");
-                throw new Error("Failed to set default address");
+            throw new Error("Failed to set default address");
             }
-            
         } catch (error) {
             console.error("Failed to set default address:", error);
-            setLocalMessage("Gagal mengubah alamat default");
-            setIsSuccess(false);
+            showMessage("error", "Gagal mengubah alamat default");
         } finally {
             setSettingDefault(null);
         }
     };
 
-    // Function to handle edit address
-    // Handler untuk membuka modal edit
+    // Handler untuk edit alamat
     const handleEditAddress = (address: IAddress) => {
         setAddressToEdit(address);
         setShowEditModal(true);
@@ -153,84 +144,63 @@ export default function ProfileForm() {
         setAddressToEdit(null);
     };
 
-    // Tambahkan handler untuk success edit
+    // Success edit
     const handleEditSuccess = (message?: string) => {
-        setLocalMessage(message || "Alamat berhasil diperbarui");
-        setIsSuccess(true);
-    
-    // Reload data alamat jika perlu
-    loadAddresses(); // uncomment jika ada function ini
-    
-    // Clear message setelah 3 detik
-        setTimeout(() => {
-            setLocalMessage("");
-            setIsSuccess(false);
-        }, 3000);
+        showMessage("success", message || "Alamat berhasil diperbarui");
+        loadAddresses(); // reload kalau ada
     };
 
-    // Function to handle delete address
+    // Delete alamat
     const handleDeleteAddress = async (addressId: number) => {
         if (addresses.length === 1) {
-            setLocalMessage("Tidak dapat menghapus alamat terakhir");
-            setIsSuccess(false);
+            showMessage("warning", "Tidak dapat menghapus alamat terakhir");
             return;
         }
-        
+
         if (!confirm("Apakah Anda yakin ingin menghapus alamat ini?")) {
             return;
         }
-        
+
         try {
             setDeletingAddress(addressId);
-            
-            // Call API to delete address
+
             const result = await deleteAddress(addressId);
-            
+
             if (result.ok) {
-                // Remove from local state
-                const updatedAddresses = addresses.filter(addr => addr.ID !== addressId);
-                
-                // If deleted address was default and there are other addresses, make first one default
-                if (updatedAddresses.length > 0 && !updatedAddresses.some(addr => addr.IsDefault === 1)) {
-                    updatedAddresses[0].IsDefault = 1;
-                    // Also call API to set new default
-                    await setDefaultAddress(updatedAddresses[0].ID);
-                }
-                
-                setAddresses(updatedAddresses);
-                
-                setLocalMessage("Alamat berhasil dihapus! ✅");
-                setIsSuccess(true);
-                
-                setTimeout(() => {
-                    setLocalMessage("");
-                    setIsSuccess(false);
-                }, 3000);
+            const updatedAddresses = addresses.filter(addr => addr.ID !== addressId);
+
+            if (
+                updatedAddresses.length > 0 &&
+                !updatedAddresses.some(addr => addr.IsDefault === 1)
+            ) {
+                updatedAddresses[0].IsDefault = 1;
+                await setDefaultAddress(updatedAddresses[0].ID);
+            }
+
+            setAddresses(updatedAddresses);
+
+            showMessage("success", "Alamat berhasil dihapus!");
             }
         } catch (error: unknown) {
             console.error("Failed to delete address:", error);
-            setLocalMessage(
-                error instanceof Error ? error.message : "Gagal menghapus alamat"
+            showMessage(
+            "error",
+            error instanceof Error ? error.message : "Gagal menghapus alamat"
             );
-            setIsSuccess(false);
+        } finally {
+            setDeletingAddress(null);
         }
     };
 
+
     // Handle address modal success
-    const handleAddressModalSuccess = (message?: string) => {
-        if (message) {
-            setLocalMessage(message);
-            setIsSuccess(true);
-            
-            // Clear message after 3 seconds
-            setTimeout(() => {
-                setLocalMessage("");
-                setIsSuccess(false);
-            }, 3000);
-        }
-        
-        // Reload addresses
-        loadAddresses();
+    const handleSuccess = (message: string, callback?: () => void) => {
+        showMessage("success", message);
+        if (callback) callback();
+    };
+
+    const handleAddressModalSuccess = () => {
+        handleSuccess("Alamat berhasil disimpan", loadAddresses);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,92 +209,95 @@ export default function ProfileForm() {
     };
 
     const handleSave = async () => {
-        console.log('Saving profile data:', formData);
-        
+        console.log("Saving profile data:", formData);
+
         try {
             const result = await dispatch(updateProfile(formData)).unwrap();
-            console.log('Update profile success:', result);
+            console.log("Update profile success:", result);
+
+            showMessage("success", "Profil berhasil diperbarui");
             setIsEditing(false);
         } catch (err) {
-            console.error('Update profile error:', err);
+            console.error("Update profile error:", err);
+            showMessage("error", "Gagal memperbarui profil");
         }
     };
 
     const handleCancel = () => {
         if (user) {
             setFormData({
-                FirstName: user.FirstName || "",
-                Surname: user.Surname || "",
-                Email: user.Email || "",
-                PhoneNumber: user.PhoneNumber || "",
-                Address: ""
+            FirstName: user.FirstName || "",
+            Surname: user.Surname || "",
+            Email: user.Email || "",
+            PhoneNumber: user.PhoneNumber || "",
+            Address: ""
             });
         }
         setIsEditing(false);
-        setLocalMessage("");
-        setIsSuccess(false);
+        showMessage("warning", "Perubahan dibatalkan");
     };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+            if (!file) return;
 
-        // Reset file input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
 
-        if (!file.type.startsWith("image/")) {
-            setLocalMessage("File harus berupa gambar");
-            setIsSuccess(false);
-            return;
-        }
+            if (!file.type.startsWith("image/")) {
+                showMessage("error", "File harus berupa gambar");
+                return;
+            }
 
-        if (file.size > 5 * 1024 * 1024) {
-            setLocalMessage("Ukuran file maksimal 5MB");
-            setIsSuccess(false);
-            return;
-        }
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage("error", "Ukuran file maksimal 5MB");
+                return;
+            }
 
-        try {
-            setIsUploadingPhoto(true);
-            
-            // Buat preview image dari file yang dipilih
-            const imageUrl = URL.createObjectURL(file);
-            setPreviewImage(imageUrl);
-            
-            // Upload foto
-            const result = await dispatch(uploadPhoto(file)).unwrap();
-            console.log('Upload photo success:', result);
-            
-            // Jika upload berhasil dan ada URL baru, update preview dengan URL asli
-            if (result?.PhotoProfile) {
-                // Clean up object URL
+            try {
+                setIsUploadingPhoto(true);
+
+                // Buat preview sementara
+                const imageUrl = URL.createObjectURL(file);
+                setPreviewImage(imageUrl);
+
+                const result = await dispatch(uploadPhoto(file)).unwrap();
+                console.log("Upload photo success:", result);
+
+                if (result?.PhotoProfile) {
+                // Hapus preview sementara
                 URL.revokeObjectURL(imageUrl);
-                
-                // Set preview ke foto yang baru diupload
-                const newProfilePic = typeof result.PhotoProfile === "object" 
-                    ? result.PhotoProfile.medium 
+
+                const newProfilePic =
+                    typeof result.PhotoProfile === "object"
+                    ? result.PhotoProfile.medium
                     : result.PhotoProfile;
+
                 setPreviewImage(newProfilePic);
-                
-                // Clear preview setelah beberapa detik untuk kembali ke state normal
+
+                // ✅ Tambahkan toast success
+                showMessage("success", "Foto profil berhasil diperbarui");
+
+                // Clear preview setelah beberapa detik
                 setTimeout(() => {
                     setPreviewImage(null);
                 }, 1000);
-            }
-            
-        } catch (err) {
-            console.error('Upload photo error:', err);
-            // Clean up preview jika error
-            if (previewImage) {
+                }
+            } catch (err) {
+                console.error("Upload photo error:", err);
+                if (previewImage) {
                 URL.revokeObjectURL(previewImage);
                 setPreviewImage(null);
-            }
-        } finally {
-            setIsUploadingPhoto(false);
+                }
+                showMessage("error", "Gagal mengunggah foto profil");
+            } finally {
+                setIsUploadingPhoto(false);
         }
     };
+
+
 
     // Clean up preview image on unmount
     useEffect(() => {
@@ -392,6 +365,15 @@ export default function ProfileForm() {
 
     return (
         <div className="container">
+            {showAlert && (
+            <div className="position-fixed top-0 start-50 translate-middle-x mt-3" style={{ zIndex: 9999 }}>
+                <div className={`alert alert-${showAlert.type === 'success' ? 'success' : showAlert.type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show shadow-lg`} role="alert">
+                <i className={`fas ${showAlert.type === 'success' ? 'fa-check-circle' : showAlert.type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} me-2`}></i>
+                {showAlert.message}
+                <button type="button" className="btn-close" onClick={() => setShowAlert(null)}></button>
+                </div>
+            </div>
+            )}
             <div className="row justify-content-center">
                 <div className="col-md-8 col-lg-6">
                     <div className="card shadow-lg border-0" style={{ borderRadius: "20px" }}>
@@ -578,26 +560,6 @@ export default function ProfileForm() {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Success/Error Message */}
-                            {localMessage && (
-                                <div
-                                    className={`alert mt-3 py-3 ${
-                                        isSuccess ? "alert-success" : "alert-danger"
-                                    }`}
-                                    style={{ borderRadius: "12px" }}
-                                >
-                                    <div className="d-flex align-items-center">
-                                        <i
-                                            className={`fas ${
-                                                isSuccess ? "fa-check-circle" : "fa-exclamation-circle"
-                                            } me-2`}
-                                        ></i>
-                                        <span className="small">{localMessage}</span>
-                                    </div>
-                                </div>
-                            )}
-
                         </div>
                     </div>
                 </div>
@@ -837,6 +799,7 @@ export default function ProfileForm() {
                 show={showAddressModal}
                 onClose={() => setShowAddressModal(false)}
                 onSuccess={handleAddressModalSuccess}
+                showMessage={showMessage}
             />
             
         </div>
