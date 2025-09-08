@@ -6,12 +6,15 @@ import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { logoutUser } from "@/store/slices/authSlice";
 import { getCartThunk, resetCart } from "@/store/slices/cartSlice";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import utilsService, { SiteConfig } from "@/services/utilsService";
 
 export default function Header({ showHeader = true }: { showHeader?: boolean }) {
   const dispatch = useAppDispatch();
   const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
   const { summary, items } = useAppSelector((state) => state.cart);
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // Load cart when user is authenticated
@@ -23,6 +26,24 @@ export default function Header({ showHeader = true }: { showHeader?: boolean }) 
       dispatch(resetCart());
     }
   }, [isAuthenticated, user, dispatch]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setError(null);
+
+        const [configData] = await Promise.all([
+          utilsService.getSiteConfig(),
+        ]);
+
+        setSiteConfig(configData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleLogout = async () => {
     const result = await dispatch(logoutUser());
@@ -46,7 +67,7 @@ export default function Header({ showHeader = true }: { showHeader?: boolean }) 
       >
         <div className="container">
           <Link className="navbar-brand" href="/">
-            LuminaStore<span>.</span>
+            {siteConfig?.site_name || "LuminaStore"}
           </Link>
 
           <button
