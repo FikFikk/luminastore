@@ -11,6 +11,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
     "bootstrap": "^5.3.7",
+    "fslightbox-react": "^2.0.0",
     "js-cookie": "^3.0.5",
     "next": "15.4.7",
     "react": "19.1.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/fslightbox-react": "^1.8.0",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",

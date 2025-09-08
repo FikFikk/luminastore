@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getProductBySlug, Product } from "@/services/productService";
 import { Image as RawShimmerImage, Shimmer } from 'react-shimmer'
 import { useAddToCart } from "@/hooks/useAddToCart";
+import FsLightbox from 'fslightbox-react';
 
 function ProductDetailPage() {
   const params = useParams();
@@ -19,13 +20,18 @@ function ProductDetailPage() {
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
   
   // Image gallery states
-  const [showImageModal, setShowImageModal] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, isLoading: addingToCart, error } = useAddToCart();
-  
+
   const imageRef = useRef<HTMLDivElement>(null);
+
+  // FSLightbox state
+  const [lightboxController, setLightboxController] = useState({
+    toggler: false,
+    slide: 1
+  });
   
   const ShimmerImage = RawShimmerImage as React.ComponentType<{
     src: string;
@@ -87,7 +93,6 @@ function ProductDetailPage() {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      // setError(null);
 
       console.log('Attempting to fetch product with slug:', slug);
       const productData = await getProductBySlug(slug);
@@ -107,7 +112,6 @@ function ProductDetailPage() {
       }
       
     } catch (err) {
-      // setError(err instanceof Error ? err.message : "Failed to fetch product");
       console.error("Error fetching product:", err);
     } finally {
       setLoading(false);
@@ -186,6 +190,14 @@ function ProductDetailPage() {
     const allImages = getAllImages();
     const newIndex = currentImageIndex < allImages.length - 1 ? currentImageIndex + 1 : 0;
     handleImageSelect(allImages[newIndex].original, newIndex);
+  };
+
+  // Open FSLightbox
+  const openLightbox = (slideIndex = currentImageIndex + 1) => {
+    setLightboxController({
+      toggler: !lightboxController.toggler,
+      slide: slideIndex
+    });
   };
 
   // Handle add to cart
@@ -300,62 +312,6 @@ function ProductDetailPage() {
         </div>
       )}
 
-      {/* Image Modal */}
-      {showImageModal && (
-        <div className="modal show d-block" style={{ zIndex: 10000, backgroundColor: 'rgba(0,0,0,0.9)' }}>
-          <div className="modal-dialog modal-xl modal-dialog-centered">
-            <div className="modal-content bg-transparent border-0">
-              <div className="modal-header border-0 pb-0">
-                <button
-                  type="button"
-                  className="btn-close btn-close-white ms-auto"
-                  onClick={() => setShowImageModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body text-center p-0">
-                <div className="position-relative">
-                  {/* Navigation arrows */}
-                  {allImages.length > 1 && (
-                    <>
-                      <button
-                        className="btn btn-light btn-lg position-absolute start-0 top-50 translate-middle-y ms-3 rounded-circle"
-                        style={{ zIndex: 1001, width: '60px', height: '60px' }}
-                        onClick={handlePreviousImage}
-                      >
-                        <i className="fas fa-chevron-left me-3"></i>
-                      </button>
-                      <button
-                        className="btn btn-light btn-lg position-absolute end-0 top-50 translate-middle-y me-3 rounded-circle"
-                        style={{ zIndex: 1001, width: '60px', height: '60px' }}
-                        onClick={handleNextImage}
-                      >
-                        <i className="fas fa-chevron-right me-3"></i>
-                      </button>
-                    </>
-                  )}
-                  
-                  <img
-                    src={selectedImage}
-                    alt={product.title}
-                    className="img-fluid rounded"
-                    style={{ maxHeight: '80vh', maxWidth: '100%' }}
-                  />
-                  
-                  {/* Image counter */}
-                  {allImages.length > 1 && (
-                    <div className="position-absolute bottom-0 start-50 translate-middle-x mb-3">
-                      <span className="badge bg-dark bg-opacity-75 px-3 py-2">
-                        {currentImageIndex + 1} / {allImages.length}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Breadcrumb */}
       <section className="hero">
         <div className="container">
@@ -399,13 +355,13 @@ function ProductDetailPage() {
                           className="image-container position-relative overflow-hidden"
                           style={{
                             width: "100%",
-                            height: "450px", // Fixed height for consistency
+                            height: "450px",
                             borderRadius: "15px",
                             cursor: "zoom-in",
                             transition: "all 0.3s ease",
                             backgroundColor: '#f8f9fa'
                           }}
-                          onClick={() => setShowImageModal(true)}
+                          onClick={() => openLightbox()}
                           ref={imageRef}
                         >
                           {!isImageLoaded && !imageError && (
@@ -415,7 +371,7 @@ function ProductDetailPage() {
                           )}
                           
                           <ShimmerImage
-                            src={selectedImage || "/assets/images/sofa.png"}
+                            src={selectedImage || (allImages.length > 0 ? allImages[0]?.original : "/assets/images/sofa.png")}
                             fallback={<Shimmer width={500} height={450} className="rounded" />}
                             onLoad={() => setIsImageLoaded(true)}
                             onError={() => {
@@ -441,19 +397,17 @@ function ProductDetailPage() {
                           </div>
                           
                           {/* Corner badges */}
-                          <div className="position-absolute top-0 end-0 m-3 d-flex flex-column gap-2"
-                              // style={{ height: "25%", width: "10%" }}
-                              >
-                            <button 
-                              className="btn btn-light btn-sm  shadow-sm zoom-btn"
+                          <div className="position-absolute top-0 end-0 m-3 d-flex flex-column gap-2">
+                            {/* <button 
+                              className="btn btn-light btn-sm shadow-sm zoom-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setShowImageModal(true);
+                                openLightbox();
                               }}
                               title="Zoom image"
                             >
                               <i className="fas fa-expand-arrows-alt"></i>
-                            </button>
+                            </button> */}
                             {allImages.length > 1 && (
                               <div className="badge bg-primary">
                                 {currentImageIndex + 1}/{allImages.length}
@@ -462,7 +416,7 @@ function ProductDetailPage() {
                           </div>
                           
                           {/* Quick navigation arrows on main image */}
-                          {allImages.length > 1 && (
+                          {/* {allImages.length > 1 && (
                             <>
                               <button
                                 className="btn btn-sm position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle nav-arrow opacity-0"
@@ -485,7 +439,7 @@ function ProductDetailPage() {
                                 <i className="fas fa-chevron-right text-black" style={{ color:"#000" }}></i>
                               </button>
                             </>
-                          )}
+                          )} */}
                         </div>
                       </div>
 
@@ -510,6 +464,7 @@ function ProductDetailPage() {
                                     backgroundColor: '#f8f9fa'
                                   }}
                                   onClick={() => handleImageSelect(image.original, index)}
+                                  onDoubleClick={() => openLightbox(index + 1)}
                                 >
                                   <img
                                     src={image.small || image.medium || image.original}
@@ -519,9 +474,6 @@ function ProductDetailPage() {
                                       height: '100%',
                                       objectFit: 'cover',
                                       objectPosition: 'center'
-                                    }}
-                                    onError={(e) => {
-                                      // e.target.style.display = 'none';
                                     }}
                                   />
                                   
@@ -548,8 +500,6 @@ function ProductDetailPage() {
                                       opacity: 0,
                                       transition: 'opacity 0.3s ease'
                                     }}
-                                    // onMouseEnter={(e) => e.target.style.opacity = 1}
-                                    // onMouseLeave={(e) => e.target.style.opacity = 0}
                                   >
                                     <i className="fas fa-eye text-white"></i>
                                   </div>
@@ -563,7 +513,7 @@ function ProductDetailPage() {
                             <div className="mt-3">
                               <button 
                                 className="btn btn-outline-primary btn-sm w-100"
-                                onClick={() => setShowImageModal(true)}
+                                onClick={() => openLightbox(1)}
                               >
                                 <i className="fas fa-images me-2"></i>
                                 View All {allImages.length} Images
@@ -759,6 +709,21 @@ function ProductDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* FSLightbox Component */}
+      <FsLightbox
+        toggler={lightboxController.toggler}
+        sources={allImages.map(img => img.original)}
+        slide={lightboxController.slide}
+        type="image"
+        exitFullscreenOnClose={true}
+        openOnMount={false}
+        slideDistance={0.3}
+        customAttributes={allImages.map((_, index) => ({
+          alt: `${product.title} - Image ${index + 1}`,
+          'data-caption': `${product.title} - Image ${index + 1}`
+        }))}
+      />
 
       {/* Enhanced Styles */}
       <style jsx>{`
