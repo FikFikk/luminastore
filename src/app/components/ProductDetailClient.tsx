@@ -657,7 +657,7 @@ function ProductDetailPage() {
                                     </div>
                                     <div className="text-end">
                                       {variant.stock > 0 ? (
-                                        <small className="text-success">
+                                        <small className="text-white">
                                           <i className="fas fa-check-circle me-1"></i>
                                           {variant.stock} left
                                         </small>
@@ -689,7 +689,7 @@ function ProductDetailPage() {
                             <i className="fas fa-minus"></i>
                           </button>
                           <input 
-                            type="number" 
+                            type="text" 
                             className="form-control text-center fw-bold"
                             value={quantity}
                             onChange={(e) => {

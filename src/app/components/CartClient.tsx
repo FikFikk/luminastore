@@ -322,42 +322,51 @@ function CartPage() {
                             </td>
 
                             <td>
-                              <div
-                                className="input-group mb-3 d-flex align-items-center quantity-container"
-                                style={{ maxWidth: "120px" }}
-                              >
-                                <div className="input-group-prepend">
-                                  <button
-                                    className="btn btn-outline-black decrease"
+                              <div className="quantity-selector">
+                                <div className="input-group" style={{ maxWidth: '150px' }}>
+                                  <button 
+                                    className="btn btn-outline-secondary"
                                     type="button"
+                                    style={{ 
+                                      backgroundColor: '#343a40',
+                                      width: '50px'
+                                    }}
                                     onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                                     disabled={updatingItems.has(item.id) || item.quantity <= 1}
                                   >
-                                    -
+                                    <i className="fas fa-minus"></i>
                                   </button>
-                                </div>
-                                <input
-                                  type="text"
-                                  className="form-control text-center quantity-amount"
-                                  value={item.quantity}
-                                  readOnly
-                                />
-                                <div className="input-group-append">
-                                  <button
-                                    className="btn btn-outline-black increase"
+                                  <input 
+                                    type="text" 
+                                    className="form-control text-center fw-bold"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 1;
+                                      const newQuantity = Math.max(1, val);
+                                      handleQuantityChange(item.id, newQuantity);
+                                    }}
+                                    min="1"
+                                    disabled={updatingItems.has(item.id)}
+                                  />
+                                  <button 
+                                    className="btn btn-outline-secondary"
                                     type="button"
+                                    style={{ 
+                                      backgroundColor: '#343a40',
+                                      width: '50px'
+                                    }}
                                     onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                                     disabled={updatingItems.has(item.id)}
                                   >
-                                    +
+                                    <i className="fas fa-plus"></i>
                                   </button>
                                 </div>
+                                {updatingItems.has(item.id) && (
+                                  <div className="spinner-border spinner-border-sm text-primary mt-2" role="status">
+                                    <span className="sr-only">Updating...</span>
+                                  </div>
+                                )}
                               </div>
-                              {updatingItems.has(item.id) && (
-                                <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                  <span className="sr-only">Updating...</span>
-                                </div>
-                              )}
                             </td>
 
                             <td>
@@ -370,11 +379,27 @@ function CartPage() {
 
                             <td>
                               <button
-                                className="btn btn-black btn-sm"
+                                className="btn btn-sm shadow-sm"
                                 onClick={() => handleRemoveItem(item.id)}
                                 disabled={updatingItems.has(item.id)}
+                                style={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '8px',
+                                  color: '#dc3545',
+                                  transition: 'all 0.3s ease',
+                                  padding: '8px 12px',
+                                  minWidth: '40px',
+                                  minHeight: '36px'
+                                }}
                               >
-                                {updatingItems.has(item.id) ? '...' : <i className="fas fa-trash"></i>}
+                                {updatingItems.has(item.id) ? (
+                                  <div className="spinner-border spinner-border-sm" role="status" style={{ width: '16px', height: '16px' }}>
+                                    <span className="sr-only">Loading...</span>
+                                  </div>
+                                ) : (
+                                  <i className="fas fa-trash"></i>
+                                )}
                               </button>
                             </td>
                           </tr>

@@ -860,7 +860,7 @@ textarea {
   border-top: 1px solid #3b5d50 !important;
 }
 .site-blocks-table .btn {
-  background: none !important;
+  /* background: none !important; */
   color: #000000;
   border: none;
   height: auto !important;
