@@ -374,7 +374,7 @@ function CartPage() {
                                 onClick={() => handleRemoveItem(item.id)}
                                 disabled={updatingItems.has(item.id)}
                               >
-                                {updatingItems.has(item.id) ? '...' : 'X'}
+                                {updatingItems.has(item.id) ? '...' : <i className="fas fa-trash"></i>}
                               </button>
                             </td>
                           </tr>
