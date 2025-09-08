@@ -77,21 +77,15 @@ export interface ProductsResponse {
   };
 }
 
-export interface SiteFeature {
-  icon: string;
-  title: string;
-  description: string;
-}
-
 export interface SiteConfig {
   site_name: string;
   tagline: string;
   about: {
     title: string;
     content: string;
-    image: IImage
+    image: IImage | null;
   };
-  features: SiteFeature[];
+  favicon: IImage | null;
 }
 
 // Services
@@ -110,7 +104,8 @@ export const utilsService = {
       throw new Error(error.error || "Failed to fetch site configuration");
     }
 
-    return response.json();
+    const data: SiteConfig = await response.json();
+    return data;
   },
 
   /**
