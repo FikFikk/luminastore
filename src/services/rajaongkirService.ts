@@ -35,6 +35,7 @@ export interface ShippingOption {
 }
 
 // Rate limiting configuration
+// Rate limiting configuration
 class RateLimiter {
   private lastRequestTime = 0;
   private requestCount = 0;
@@ -78,11 +79,11 @@ class RateLimiter {
 class Debouncer {
   private timeoutId: NodeJS.Timeout | null = null;
   
-  debounce<T extends (...args: any[]) => any>(
-    func: T, 
+  debounce<TArgs extends unknown[], TReturn>(
+    func: (...args: TArgs) => TReturn | Promise<TReturn>, 
     delay: number
-  ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
-    return (...args: Parameters<T>): Promise<ReturnType<T>> => {
+  ): (...args: TArgs) => Promise<TReturn> {
+    return (...args: TArgs): Promise<TReturn> => {
       return new Promise((resolve, reject) => {
         // Clear previous timeout
         if (this.timeoutId) {
@@ -198,7 +199,6 @@ export const cancelPendingDestinationSearch = () => {
 
 // Optional: Create a version that can be used with immediate search (bypass debounce)
 export const searchDestinationsImmediate = _searchDestinationsInternal;
-
 // Cache for shipping options
 const shippingCache = new Map<string, { data: ShippingOption[]; timestamp: number }>();
 const SHIPPING_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes for shipping data
