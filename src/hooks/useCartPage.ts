@@ -4,14 +4,15 @@ import {
   removeCartItemThunk, 
   clearCartThunk, 
   updateCartItemThunk,
-  getCartThunk 
+  getCartThunk,
+  CartSummary
 } from "@/store/slices/cartSlice";
-import type { UpdateCartParams } from "@/services/cartService";
+import { ICartItem } from "@/app/components/inteface/ICartItem";
 
 interface UseCartPageReturn {
   // State
-  cartItems: any[];
-  summary: any;
+  cartItems: ICartItem[];
+  summary: CartSummary;
   isLoading: boolean;
   error: string | null;
   updatingItems: Set<number>;
