@@ -436,12 +436,37 @@ export default function OrdersPage() {
                         <div className="d-flex gap-2 flex-wrap">
                           <div className="d-flex align-items-center">
                             <small className="text-muted me-2">Pembayaran:</small>
-                            {order.payment_status ? getPaymentStatusBadge(order.payment_status) : <Shimmer width={80} height={20} />}
+                            {order.payment_status ? (() => {
+                              const createdAt = new Date(order.created_at);
+                              const now = new Date();
+                              const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                              const isExpiredByTime = diffInHours >= 24;
+                              
+                              // Jika status menunggu, sudah lewat 24 jam, dan payment_url null, tampilkan Cancelled
+                              if (order.payment_status === 'pending' && isExpiredByTime && !order.payment_url) {
+                                return getPaymentStatusBadge('expired');
+                              }
+                              
+                              return getPaymentStatusBadge(order.payment_status);
+                            })() : <Shimmer width={80} height={20} />}
                           </div>
-                          <div className="d-flex align-items-center">
-                            <small className="text-muted me-2">Pengiriman:</small>
-                            {order.shipping_status ? getShippingStatusBadge(order.shipping_status) : <Shimmer width={80} height={20} />}
-                          </div>
+                          {(() => {
+                            const createdAt = new Date(order.created_at);
+                            const now = new Date();
+                            const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                            const isExpiredByTime = diffInHours >= 24;
+                            const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
+                            
+                            // Jangan tampilkan status pengiriman jika cancelled
+                            if (isCancelled) return null;
+                            
+                            return (
+                              <div className="d-flex align-items-center">
+                                <small className="text-muted me-2">Pengiriman:</small>
+                                {order.shipping_status ? getShippingStatusBadge(order.shipping_status) : <Shimmer width={80} height={20} />}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="col-md-4 text-md-end mt-2 mt-md-0">

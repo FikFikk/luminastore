@@ -109,7 +109,8 @@ export default function OrderDetailPage() {
       'pending': { class: 'bg-warning text-dark', text: 'Menunggu', icon: 'fas fa-clock' },
       'processing': { class: 'bg-info text-white', text: 'Diproses', icon: 'fas fa-cogs' },
       'shipped': { class: 'bg-primary text-white', text: 'Dikirim', icon: 'fas fa-shipping-fast' },
-      'delivered': { class: 'bg-success text-white', text: 'Terkirim', icon: 'fas fa-check-double' }
+      'delivered': { class: 'bg-success text-white', text: 'Terkirim', icon: 'fas fa-check-double' },
+      'expired': { class: 'bg-secondary text-white', text: 'N/A', icon: 'fas fa-times' }
     };
     const badge = statusMap[status as keyof typeof statusMap] || { class: 'bg-light text-dark', text: status, icon: 'fas fa-question' };
     
@@ -276,7 +277,19 @@ export default function OrderDetailPage() {
                     <i className="fas fa-credit-card text-primary" style={{ fontSize: '2rem' }}></i>
                   </div>
                   <h6 className="fw-bold mb-2">Status Pembayaran</h6>
-                  {getPaymentStatusBadge(order.payment_status)}
+                  {(() => {
+                    const createdAt = new Date(order.created_at);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                    const isExpiredByTime = diffInHours >= 24;
+                    
+                    // Jika status menunggu, sudah lewat 24 jam, dan payment_url null, tampilkan Cancelled
+                    if (order.payment_status === 'pending' && isExpiredByTime && !order.payment_url) {
+                      return getPaymentStatusBadge('expired');
+                    }
+                    
+                    return getPaymentStatusBadge(order.payment_status);
+                  })()}
                 </div>
               </div>
               
@@ -286,7 +299,20 @@ export default function OrderDetailPage() {
                     <i className="fas fa-shipping-fast text-primary" style={{ fontSize: '2rem' }}></i>
                   </div>
                   <h6 className="fw-bold mb-2">Status Pengiriman</h6>
-                  {getShippingStatusBadge(order.shipping_status)}
+                  {(() => {
+                    const createdAt = new Date(order.created_at);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                    const isExpiredByTime = diffInHours >= 24;
+                    const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
+                    
+                    // Jika cancelled/expired, tampilkan status expired
+                    if (isCancelled) {
+                      return getShippingStatusBadge('expired');
+                    }
+                    
+                    return getShippingStatusBadge(order.shipping_status);
+                  })()}
                 </div>
               </div>
               
@@ -296,14 +322,37 @@ export default function OrderDetailPage() {
                     <i className="fas fa-calendar-check text-primary" style={{ fontSize: '2rem' }}></i>
                   </div>
                   <h6 className="fw-bold mb-2">Estimasi Pengiriman</h6>
-                  {order.etd ? (
-                    <span className="badge bg-info text-white px-3 py-2">
-                      <i className="fas fa-clock me-1"></i>
-                      {order.etd}
-                    </span>
-                  ) : (
-                    <span className="badge bg-light text-dark px-3 py-2">Belum tersedia</span>
-                  )}
+                  {(() => {
+                    const createdAt = new Date(order.created_at);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+                    const isExpiredByTime = diffInHours >= 24;
+                    const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
+                    
+                    // Jika cancelled/expired, tampilkan N/A
+                    if (isCancelled) {
+                      return (
+                        <span className="badge bg-secondary text-white px-3 py-2">
+                          <i className="fas fa-times me-1"></i>
+                          N/A
+                        </span>
+                      );
+                    }
+                    
+                    // Tampilkan ETD normal
+                    if (order.etd) {
+                      return (
+                        <span className="badge bg-info text-white px-3 py-2">
+                          <i className="fas fa-clock me-1"></i>
+                          {order.etd}
+                        </span>
+                      );
+                    }
+                    
+                    return (
+                      <span className="badge bg-light text-dark px-3 py-2">Belum tersedia</span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
