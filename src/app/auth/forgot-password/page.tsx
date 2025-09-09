@@ -1,5 +1,10 @@
 import AuthLayout from "@/app/components/auth/AuthLayout";
 import ForgotPasswordForm from "@/app/components/auth/ForgotPasswordForm";
+import { buildPageMetadata } from "@/services/metadataHelper";
+
+export async function generateMetadata() {
+  return buildPageMetadata("Forgot Password");
+}
 
 export default function ForgotPasswordPage() {
   return (

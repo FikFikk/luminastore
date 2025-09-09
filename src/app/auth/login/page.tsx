@@ -1,8 +1,11 @@
-"use client";
-
 import React from "react";
 import LoginForm from "@/app/components/auth/LoginForm";
 import AuthLayout from "@/app/components/auth/AuthLayout";
+import { buildPageMetadata } from "@/services/metadataHelper";
+
+export async function generateMetadata() {
+  return buildPageMetadata("Login");
+}
 
 function LoginPage() {
   return (
