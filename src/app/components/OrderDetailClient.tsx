@@ -282,12 +282,10 @@ export default function OrderDetailPage() {
                     const now = new Date();
                     const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
                     const isExpiredByTime = diffInHours >= 24;
-                    
-                    // Jika status menunggu, sudah lewat 24 jam, dan payment_url null, tampilkan Cancelled
-                    if (order.payment_status === 'pending' && isExpiredByTime && !order.payment_url) {
+                    // Jika status menunggu dan sudah lewat 24 jam, tampilkan Kadaluarsa
+                    if (order.payment_status === 'pending' && isExpiredByTime) {
                       return getPaymentStatusBadge('expired');
                     }
-                    
                     return getPaymentStatusBadge(order.payment_status);
                   })()}
                 </div>
@@ -304,13 +302,15 @@ export default function OrderDetailPage() {
                     const now = new Date();
                     const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
                     const isExpiredByTime = diffInHours >= 24;
-                    const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
-                    
-                    // Jika cancelled/expired, tampilkan status expired
-                    if (isCancelled) {
-                      return getShippingStatusBadge('expired');
+                    // Jika status menunggu dan sudah lewat 24 jam, tampilkan N/A
+                    if (order.payment_status === 'pending' && isExpiredByTime) {
+                      return (
+                        <span className="badge bg-secondary text-white px-3 py-2">
+                          <i className="fas fa-times me-2"></i>
+                          N/A
+                        </span>
+                      );
                     }
-                    
                     return getShippingStatusBadge(order.shipping_status);
                   })()}
                 </div>
@@ -327,10 +327,8 @@ export default function OrderDetailPage() {
                     const now = new Date();
                     const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
                     const isExpiredByTime = diffInHours >= 24;
-                    const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
-                    
-                    // Jika cancelled/expired, tampilkan N/A
-                    if (isCancelled) {
+                    // Jika status menunggu dan sudah lewat 24 jam, tampilkan N/A
+                    if (order.payment_status === 'pending' && isExpiredByTime) {
                       return (
                         <span className="badge bg-secondary text-white px-3 py-2">
                           <i className="fas fa-times me-1"></i>
@@ -338,7 +336,6 @@ export default function OrderDetailPage() {
                         </span>
                       );
                     }
-                    
                     // Tampilkan ETD normal
                     if (order.etd) {
                       return (
@@ -348,7 +345,6 @@ export default function OrderDetailPage() {
                         </span>
                       );
                     }
-                    
                     return (
                       <span className="badge bg-light text-dark px-3 py-2">Belum tersedia</span>
                     );
@@ -534,7 +530,7 @@ export default function OrderDetailPage() {
                 <div className="row g-3">
                   <div className="col-12">
                     <div className="d-flex align-items-center p-3 bg-light rounded">
-                      <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                      <div className="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40, borderRadius: '50%' }}>
                         <i className="fas fa-user text-primary"></i>
                       </div>
                       <div>
@@ -548,7 +544,7 @@ export default function OrderDetailPage() {
                   
                   <div className="col-12">
                     <div className="d-flex align-items-center p-3 bg-light rounded">
-                      <div className="bg-info bg-opacity-10 p-2 rounded-circle me-3">
+                      <div className="bg-info bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40, borderRadius: '50%' }}>
                         <i className="fas fa-envelope text-info"></i>
                       </div>
                       <div>
@@ -563,7 +559,7 @@ export default function OrderDetailPage() {
                   {customer.phone && (
                     <div className="col-12">
                       <div className="d-flex align-items-center p-3 bg-light rounded">
-                        <div className="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                        <div className="bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40, borderRadius: '50%' }}>
                           <i className="fas fa-phone text-success"></i>
                         </div>
                         <div>
@@ -593,7 +589,7 @@ export default function OrderDetailPage() {
                 {/* Payment Method */}
                 <div className="mb-4">
                   <div className="d-flex align-items-center p-3 bg-light rounded">
-                    <div className="bg-warning bg-opacity-10 p-2 rounded-circle me-3">
+                    <div className="bg-warning bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40, borderRadius: '50%' }}>
                       <i className="fas fa-credit-card text-warning"></i>
                     </div>
                     <div>
@@ -608,7 +604,7 @@ export default function OrderDetailPage() {
                 {/* Courier */}
                 <div className="mb-4">
                   <div className="d-flex align-items-center p-3 bg-light rounded">
-                    <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                    <div className="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40, borderRadius: '50%' }}>
                       <i className="fas fa-shipping-fast text-primary"></i>
                     </div>
                     <div>

@@ -115,6 +115,23 @@ export default function OrdersPage() {
     );
   }
 
+  // Transform orders: set expired if created_at > 24h and status still pending
+  const transformedOrders = orders.map(order => {
+    const createdAt = new Date(order.created_at);
+    const now = new Date();
+    const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (order.payment_status === 'pending' && diffInHours >= 24) {
+      return {
+        ...order,
+        payment_status: 'expired',
+        status: 'expired',
+        can_pay: false,
+        is_expired: true,
+      };
+    }
+    return order;
+  });
+
   return (
     <div className="bg-light min-vh-100">
       <div className="container py-5">
@@ -152,7 +169,7 @@ export default function OrdersPage() {
                 <div className="card-body p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-shrink-0">
-                      <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                      <div className="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: '50%' }}>
                         <i className="fas fa-shopping-cart text-primary fs-5"></i>
                       </div>
                     </div>
@@ -170,7 +187,7 @@ export default function OrdersPage() {
                 <div className="card-body p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-shrink-0">
-                      <div className="bg-warning bg-opacity-10 p-3 rounded-circle">
+                      <div className="bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: '50%' }}>
                         <i className="fas fa-clock text-warning fs-5"></i>
                       </div>
                     </div>
@@ -188,7 +205,7 @@ export default function OrdersPage() {
                 <div className="card-body p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-shrink-0">
-                      <div className="bg-success bg-opacity-10 p-3 rounded-circle">
+                      <div className="bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: '50%' }}>
                         <i className="fas fa-check-circle text-success fs-5"></i>
                       </div>
                     </div>
@@ -206,7 +223,7 @@ export default function OrdersPage() {
                 <div className="card-body p-4">
                   <div className="d-flex align-items-center">
                     <div className="flex-shrink-0">
-                      <div className="bg-info bg-opacity-10 p-3 rounded-circle">
+                      <div className="bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, borderRadius: '50%' }}>
                         <i className="fas fa-truck text-info fs-5"></i>
                       </div>
                     </div>
@@ -345,8 +362,8 @@ export default function OrdersPage() {
               </div>
 
               <div className="card-body p-0">
-              {orders.length > 0 ? (
-                orders.map((order, index) => (
+              {transformedOrders.length > 0 ? (
+                transformedOrders.map((order, index) => (
                   <div key={order.id} className={`p-4 ${index !== orders.length - 1 ? 'border-bottom' : ''} order-item`}>
                     
                     {/* Order Header */}
@@ -450,16 +467,14 @@ export default function OrdersPage() {
                               return getPaymentStatusBadge(order.payment_status);
                             })() : <Shimmer width={80} height={20} />}
                           </div>
-                          {(() => {
+                          {order.payment_status === 'expired' ? null : (() => {
                             const createdAt = new Date(order.created_at);
                             const now = new Date();
                             const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
                             const isExpiredByTime = diffInHours >= 24;
                             const isCancelled = order.payment_status === 'pending' && isExpiredByTime && !order.payment_url;
-                            
                             // Jangan tampilkan status pengiriman jika cancelled
                             if (isCancelled) return null;
-                            
                             return (
                               <div className="d-flex align-items-center">
                                 <small className="text-muted me-2">Pengiriman:</small>
