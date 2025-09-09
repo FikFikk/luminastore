@@ -70,6 +70,16 @@ function CheckoutPage() {
   const [error, setError] = useState<string>("");
   const [showAlert, setShowAlert] = useState<{type: 'success' | 'error' | 'warning', message: string} | null>(null);
 
+  // Custom Wizard State
+  const [activeStep, setActiveStep] = useState(0);
+  
+  const steps = [
+    { title: "Alamat Pengiriman", icon: "fas fa-map-marker-alt" },
+    { title: "Metode Pengiriman", icon: "fas fa-truck" },
+    { title: "Metode Pembayaran", icon: "fas fa-credit-card" },
+    { title: "Ringkasan & Catatan", icon: "fas fa-clipboard-list" }
+  ];
+
   // Load initial data
   useEffect(() => {
     loadCart();
@@ -161,18 +171,7 @@ function CheckoutPage() {
       
     } catch (error: unknown) {
       console.error('Failed to load payment methods:', error);
-      return NextResponse.json(
-        {
-          error: "Terjadi kesalahan sistem. Silakan coba lagi nanti.",
-          details:
-            process.env.NODE_ENV === "development"
-              ? error instanceof Error
-                ? error.message
-                : String(error)
-              : undefined,
-        },
-        { status: 500 }
-      );
+      setPaymentMethodsError('Gagal memuat metode pembayaran');
     } finally {
       setPaymentMethodsLoading(false);
     }
@@ -349,6 +348,11 @@ function CheckoutPage() {
     setSelectedCourier(courierCode);
   };
 
+  // Handle address selection
+  const handleSelectAddress = (address: IAddress) => {
+    setSelectedAddress(address);
+  };
+
   // Enhanced notes validation and handling
   const validateNotes = (notes: string): string | null => {
     if (notes.trim().length > 1000) {
@@ -366,13 +370,70 @@ function CheckoutPage() {
     }
   };
 
-  // Handle address modal success callback
-  // const handleAddressModalSuccess = (message?: string) => {
-  //   // if (message) {
-  //   //   alert(message);
-  //   // }
-  //   loadAddresses(); // Reload addresses after successful creation
-  // };
+  // Step validation functions
+  const validateStep = (stepIndex: number): { isValid: boolean; message?: string } => {
+    switch (stepIndex) {
+      case 0:
+        if (!selectedAddress) {
+          return { isValid: false, message: 'Pilih alamat pengiriman terlebih dahulu' };
+        }
+        return { isValid: true };
+      case 1:
+        if (!selectedShipping || !selectedCourier) {
+          return { isValid: false, message: 'Pilih metode pengiriman terlebih dahulu' };
+        }
+        return { isValid: true };
+      case 2:
+        if (!paymentMethod) {
+          return { isValid: false, message: 'Pilih metode pembayaran terlebih dahulu' };
+        }
+        return { isValid: true };
+      case 3:
+        return { isValid: true }; // Notes are optional
+      default:
+        return { isValid: false };
+    }
+  };
+
+  // Navigation handlers
+  const handleNext = () => {
+    const validation = validateStep(activeStep);
+    if (validation.isValid) {
+      setActiveStep(prev => Math.min(prev + 1, steps.length - 1));
+    } else if (validation.message) {
+      showMessage('error', validation.message);
+    }
+  };
+
+  const handlePrev = () => {
+    setActiveStep(prev => Math.max(prev - 1, 0));
+  };
+
+  const handleStepClick = (stepIndex: number) => {
+    // Allow going back to previous steps or current step
+    if (stepIndex <= activeStep) {
+      setActiveStep(stepIndex);
+    } else {
+      // Validate all previous steps before jumping ahead
+      for (let i = activeStep; i < stepIndex; i++) {
+        const validation = validateStep(i);
+        if (!validation.isValid && validation.message) {
+          showMessage('error', validation.message);
+          return;
+        }
+      }
+      setActiveStep(stepIndex);
+    }
+  };
+
+  const handleComplete = () => {
+    const validation = validateStep(activeStep);
+    if (validation.isValid) {
+      handlePlaceOrder();
+    } else if (validation.message) {
+      showMessage('error', validation.message);
+    }
+  };
 
   const handleSuccess = (message: string, callback?: () => void) => {
     showMessage("success", message);
@@ -539,6 +600,7 @@ function CheckoutPage() {
           </div>
         </div>
       )}
+
       {/* Hero Section */}
       <div className="hero">
         <div className="container">
@@ -554,398 +616,554 @@ function CheckoutPage() {
         </div>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <div className="alert alert-danger" role="alert">
-                {error}
-                <button 
-                  className="btn btn-sm btn-outline-danger ms-2" 
-                  onClick={handleClearCache}
-                  title="Clear cache untuk reset"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="untree_co-section">
         <div className="container">
           <div className="row">
-            {/* Billing Details */}
-            <div className="col-md-6 mb-5 mb-md-0">
-              <h2 className="h3 mb-3 text-black">Billing Details</h2>
-              <div className="p-3 p-lg-5 border bg-white">
-                
-                {/* Address Selection */}
-                <div className="form-group mb-4">
-                  <label className="text-black"><strong>Pilih Alamat Pengiriman</strong></label>
-                  
-                  {addresses.length > 0 ? (
-                    <div className="mt-3">
-                      {addresses.map((address) => (
-                        <div key={address.ID} className="form-check mb-3">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="selectedAddress"
-                            id={`address-${address.ID}`}
-                            checked={selectedAddress?.ID === address.ID}
-                            onChange={() => setSelectedAddress(address)}
-                          />
-                          <label className="form-check-label" htmlFor={`address-${address.ID}`}>
-                            <strong>{address.Title}</strong><br/>
-                            <small className="text-muted">
-                              {address.Alamat}, {address.Kecamatan}<br/>
-                              {address.Kota}, {address.Provinsi} {address.KodePos}
-                              {address.IsDefault === 1 && <span className="badge badge-success ml-2">Default</span>}
-                            </small>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="alert alert-info mt-2">
-                      <small>Belum ada alamat tersimpan</small>
-                    </div>
-                  )}
-                  
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm mt-2"
-                    onClick={() => setShowAddressModal(true)}
-                  >
-                    + Tambah Alamat Baru
-                  </button>
-                </div>
-
-                {/* Enhanced Shipping Options Section */}
-                {selectedAddress && (
-                  <div className="form-group mb-4">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <label className="text-black"><strong>Pilih Metode Pengiriman</strong></label>
-                      <small className="text-muted">
-                        Berat: {selectedTotals.total_weight}g
-                      </small>
-                    </div>
-                    
-                    {shippingLoading ? (
-                      <div className="mt-3">
-                        <div className="d-flex align-items-center">
-                          <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-                          <small className="text-muted">Memuat opsi pengiriman...</small>
-                        </div>
-                      </div>
-                    ) : shippingError ? (
-                      <div className="alert alert-warning mt-3">
-                        <small>{shippingError}</small>
-                        <div className="mt-2">
-                          <button 
-                            className="btn btn-sm btn-outline-primary me-2" 
-                            onClick={retryShippingOptions}
-                            disabled={shippingLoading || retryCountRef.current >= maxRetries}
+            <div className="col-12">
+              
+              {/* Custom Wizard Implementation */}
+              <div className="custom-wizard">
+                {/* Step Indicator */}
+                <div className="wizard-steps mb-5">
+                  <div className="row">
+                    {steps.map((step, index) => {
+                      const isActive = index === activeStep;
+                      const isCompleted = index < activeStep;
+                      const isAccessible = index <= activeStep || validateStep(index).isValid;
+                      
+                      return (
+                        <div key={index} className="col">
+                          <div 
+                            className={`wizard-step text-center ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isAccessible ? 'clickable' : ''}`}
+                            onClick={() => isAccessible && handleStepClick(index)}
+                            style={{ cursor: isAccessible ? 'pointer' : 'default' }}
                           >
-                            {shippingLoading ? 'Loading...' : 'Coba Lagi'}
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-outline-secondary" 
-                            onClick={handleClearCache}
-                          >
-                            Reset Cache
-                          </button>
-                        </div>
-                      </div>
-                    ) : shippingOptions.length > 0 ? (
-                      <div className="mt-3">
-                        {shippingOptions.map((option) => (
-                          <div key={option.courier_code} className="mb-3">
-                            <h6 className="text-primary">{option.courier_name}</h6>
-                            {option.services.map((service) => (
-                              <div key={service.service_code} className="form-check mb-2 ml-3">
-                                <input
-                                  className="form-check-input"
-                                  type="radio"
-                                  name="selectedShipping"
-                                  id={`shipping-${option.courier_code}-${service.service_code}`}
-                                  checked={selectedShipping?.service_code === service.service_code && selectedCourier === option.courier_code}
-                                  onChange={() => handleSelectShipping(service, option.courier_code)}
-                                />
-                                <label className="form-check-label" htmlFor={`shipping-${option.courier_code}-${service.service_code}`}>
-                                  <strong>{service.service_name}</strong> - {service.cost_formatted}<br/>
-                                  <small className="text-muted">
-                                    {service.description} • Estimasi: {service.etd}
-                                  </small>
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    ) : selectedAddress ? (
-                      <div className="alert alert-info mt-3">
-                        <small>Tidak ada opsi pengiriman tersedia untuk alamat ini</small>
-                        <button 
-                          className="btn btn-sm btn-outline-primary ms-2" 
-                          onClick={() => loadShippingOptions()}
-                          disabled={shippingLoading}
-                        >
-                          Muat Ulang
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Enhanced Payment Method Section with Fee Display */}
-                <div className="form-group mb-4">
-                  <label className="text-black"><strong>Metode Pembayaran</strong></label>
-                  
-                  {paymentMethodsLoading ? (
-                    <div className="mt-3">
-                      <div className="d-flex align-items-center">
-                        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-                        <small className="text-muted">Memuat metode pembayaran...</small>
-                      </div>
-                    </div>
-                  ) : paymentMethodsError ? (
-                    <div className="alert alert-warning mt-3">
-                      <small>{paymentMethodsError}</small>
-                      <div className="mt-2">
-                        <button 
-                          className="btn btn-sm btn-outline-primary" 
-                          onClick={loadPaymentMethods}
-                          disabled={paymentMethodsLoading}
-                        >
-                          Coba Lagi
-                        </button>
-                      </div>
-                    </div>
-                  ) : paymentMethods ? (
-                    <div className="mt-3">
-                      {/* COD Option - Always show first */}
-                      <div className="form-check mb-3">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="paymentMethod"
-                          id="payment-cod"
-                          value="cod"
-                          checked={paymentMethod === "cod"}
-                          onChange={(e) => handlePaymentMethodSelect(e.target.value)}
-                        />
-                        <label className="form-check-label" htmlFor="payment-cod">
-                          <strong>Bayar di Tempat (COD)</strong>
-                          <small className="text-muted d-block">Bayar saat barang diterima</small>
-                        </label>
-                      </div>
-
-                      {/* Online Payment Methods */}
-                      {Object.entries(paymentMethods.groupedMethods).map(([category, methods]) => {
-                        if (methods.length === 0) return null;
-                        
-                        return (
-                          <div key={category} className="mb-3">
-                            <h6 className="text-primary mb-2">
-                              {isCategoryKey(category)
-                                ? getCategoryDisplayName(category)
-                                : "Metode Tidak Dikenal"}
-                            </h6>
-
-                            <div className="ms-3">
-                              {methods.map((method: DuitkuPaymentMethod) => {
-                                const methodInfo = getPaymentMethodInfo(method);
-                                const inputId = `payment-${method.paymentMethod}`;
-                                
-                                return (
-                                  <div key={method.paymentMethod} className="form-check mb-2">
-                                    <input
-                                      className="form-check-input"
-                                      type="radio"
-                                      name="paymentMethod"
-                                      id={inputId}
-                                      value={method.paymentMethod}
-                                      checked={paymentMethod === method.paymentMethod}
-                                      onChange={(e) => handlePaymentMethodSelect(e.target.value, method)}
-                                    />
-                                    <label className="form-check-label d-flex align-items-center" htmlFor={inputId}>
-                                      {method.paymentImage && (
-                                        <img 
-                                          src={method.paymentImage} 
-                                          alt={method.paymentName}
-                                          className="me-2"
-                                          style={{ width: '32px', height: '20px', objectFit: 'contain' }}
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
-                                        />
-                                      )}
-                                      <div>
-                                        <strong>{methodInfo.name}</strong>
-                                        {methodInfo.fee > 0 && (
-                                          <small className="text-muted d-block">
-                                            Biaya admin: {methodInfo.feeFormatted}
-                                          </small>
-                                        )}
-                                      </div>
-                                    </label>
-                                  </div>
-                                );
-                              })}
+                            <div className={`step-circle mx-auto mb-2 d-flex align-items-center justify-content-center ${isActive ? 'bg-danger text-white' : isCompleted ? 'bg-success text-white' : 'bg-light text-muted'}`}>
+                              {isCompleted ? (
+                                <i className="fas fa-check"></i>
+                              ) : (
+                                <i className={step.icon}></i>
+                              )}
+                            </div>
+                            <div className={`step-title small ${isActive ? 'text-danger fw-bold' : isCompleted ? 'text-success' : 'text-muted'}`}>
+                              {step.title}
                             </div>
                           </div>
-                        );
-                      })}
-                      
-                      <div className="mt-3">
-                        <small className="text-muted">
-                          Total metode pembayaran: {paymentMethods.totalMethods}
-                        </small>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-3">
-                      <div className="form-check mb-2">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="paymentMethod"
-                          id="payment-cod-fallback"
-                          value="cod"
-                          checked={paymentMethod === "cod"}
-                          onChange={(e) => handlePaymentMethodSelect(e.target.value)}
-                        />
-                        <label className="form-check-label" htmlFor="payment-cod-fallback">
-                          Bayar di Tempat (COD)
-                        </label>
-                      </div>
-                      <small className="text-muted">Metode pembayaran online akan dimuat setelah total harga tersedia</small>
-                    </div>
-                  )}
-                </div>
-
-                {/* Enhanced Order Notes Section */}
-                <div className="form-group">
-                  <label htmlFor="c_order_notes" className="text-black">
-                    <strong>Catatan Pesanan</strong>
-                  </label>
-                  <textarea
-                    name="c_order_notes"
-                    id="c_order_notes"
-                    className="form-control"
-                    placeholder="Tulis catatan khusus untuk pesanan Anda (opsional)..."
-                    value={orderNotes}
-                    onChange={handleNotesChange}
-                    rows={4}
-                    maxLength={1000}
-                  ></textarea>
-                  <div className="d-flex justify-content-between align-items-center mt-1">
-                    <small className="text-muted">
-                      Catatan akan disimpan dan dapat dilihat oleh penjual
-                    </small>
-                    <small className="text-muted">
-                      {orderNotes.length}/1000 karakter
-                    </small>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {orderNotes.length > 900 && (
-                    <small className="text-warning">
-                      Mendekati batas maksimal karakter
-                    </small>
-                  )}
+                  <div className="progress mt-3">
+                    <div 
+                      className="progress-bar bg-danger" 
+                      style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }}
+                    ></div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Order Section - Fixed to use selectedCartItems and selectedTotals */}
-            <div className="col-md-6">
-              <div className="row mb-5">
-                <div className="col-md-12">
-                  <h2 className="h3 mb-3 text-black">Your Order</h2>
-                  <div className="p-3 p-lg-5 border bg-white">
-                    <table className="table site-block-order-table mb-5">
-                      <thead>
-                        <tr>
-                          <th>Product</th>
-                          <th>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Use selectedCartItems instead of cart.items */}
-                        {selectedCartItems.map((item) => (
-                          <tr key={item.id}>
-                            <td>
-                              {item.product_title}
-                              {item.variant_title && (
-                                <small className="text-muted d-block">
-                                  Variant: {item.variant_title}
-                                </small>
-                              )}
-                              <strong className="mx-2">x</strong> {item.quantity}
-                            </td>
-                            <td>{formatPrice(item.total_price)}</td>
-                          </tr>
-                        ))}
-                        
-                        <tr>
-                          <td className="text-black font-weight-bold">
-                            <strong>Cart Subtotal</strong>
-                          </td>
-                          {/* Use selectedTotals instead of cart.summary */}
-                          <td className="text-black">{formatPrice(selectedTotals.total_price)}</td>
-                        </tr>
-                        
-                        {selectedShipping && (
-                          <tr>
-                            <td className="text-black font-weight-bold">
-                              <strong>Shipping ({selectedCourier?.toUpperCase()} - {selectedShipping.service_code})</strong>
-                            </td>
-                            <td className="text-black">{selectedShipping.cost_formatted}</td>
-                          </tr>
-                        )}
-                        {getSelectedPaymentMethodFee() > 0 && (
-                          <tr>
-                            <td className="text-black font-weight-bold">
-                              <strong>Biaya Admin Pembayaran</strong>
-                            </td>
-                            <td className="text-black">{formatPrice(getSelectedPaymentMethodFee())}</td>
-                          </tr>
-                        )}
-                        
-                        <tr>
-                          <td className="text-black font-weight-bold">
-                            <strong>Order Total</strong>
-                          </td>
-                          <td className="text-black font-weight-bold">
-                            <strong>{formatPrice(getTotalAmount())}</strong>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    <div className="form-group">
-                      <button
-                        className="btn btn-black btn-lg py-3 btn-block"
-                        onClick={handlePlaceOrder}
-                        disabled={!selectedAddress || !paymentMethod || !selectedShipping || isProcessing}
-                      >
-                        {isProcessing ? 'Processing...' : 'Place Order'}
-                      </button>
+                {/* Step Content */}
+                <div className="wizard-content">
+                  {/* Step 1: Address Selection */}
+                  {activeStep === 0 && (
+                    <div className="p-3 p-lg-5 border bg-white rounded">
+                      <h3 className="mb-4">Pilih Alamat Pengiriman</h3>
                       
-                      {(!selectedAddress || !paymentMethod || !selectedShipping) && (
-                        <small className="text-muted d-block mt-2">
-                          {!selectedAddress && "• Pilih alamat pengiriman"}<br/>
-                          {!selectedShipping && "• Pilih metode pengiriman"}<br/>
-                          {!paymentMethod && "• Pilih metode pembayaran"}
+                      {addresses.length > 0 ? (
+                        <div className="mt-3">
+                          {addresses.map((address) => (
+                            <div key={address.ID} className="form-check mb-3 p-3 border rounded">
+                              <input
+                                className="form-check-input"
+                                type="radio"
+                                name="selectedAddress"
+                                id={`address-${address.ID}`}
+                                checked={selectedAddress?.ID === address.ID}
+                                onChange={() => handleSelectAddress(address)}
+                              />
+                              <label className="form-check-label ms-2" htmlFor={`address-${address.ID}`}>
+                                <strong>{address.Title}</strong><br/>
+                                <small className="text-muted">
+                                  {address.Alamat}, {address.Kecamatan}<br/>
+                                  {address.Kota}, {address.Provinsi} {address.KodePos}
+                                  {address.IsDefault === 1 && <span className="badge bg-success ms-2">Default</span>}
+                                </small>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="alert alert-info mt-2">
+                          <small>Belum ada alamat tersimpan</small>
+                        </div>
+                      )}
+                      
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm mt-2"
+                        onClick={() => setShowAddressModal(true)}
+                      >
+                        + Tambah Alamat Baru
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Step 2: Shipping Method */}
+                  {activeStep === 1 && (
+                    <div className="p-3 p-lg-5 border bg-white rounded">
+                      <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h3>Pilih Metode Pengiriman</h3>
+                        <small className="text-muted">
+                          Berat: {selectedTotals.total_weight}g
                         </small>
+                      </div>
+                      
+                      {!selectedAddress && (
+                        <div className="alert alert-warning">
+                          Pilih alamat pengiriman terlebih dahulu pada step sebelumnya
+                        </div>
+                      )}
+                      
+                      {selectedAddress && (
+                        <>
+                          <div className="mb-3 p-3 bg-light rounded">
+                            <strong>Alamat Terpilih:</strong><br/>
+                            {selectedAddress.Title} - {selectedAddress.Alamat}, {selectedAddress.Kecamatan}, {selectedAddress.Kota}
+                          </div>
+
+                          {shippingLoading ? (
+                            <div className="mt-3">
+                              <div className="d-flex align-items-center">
+                                <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                                <small className="text-muted">Memuat opsi pengiriman...</small>
+                              </div>
+                            </div>
+                          ) : shippingError ? (
+                            <div className="alert alert-warning mt-3">
+                              <small>{shippingError}</small>
+                              <div className="mt-2">
+                                <button 
+                                  className="btn btn-sm btn-outline-primary me-2" 
+                                  onClick={retryShippingOptions}
+                                  disabled={shippingLoading || retryCountRef.current >= maxRetries}
+                                >
+                                  {shippingLoading ? 'Loading...' : 'Coba Lagi'}
+                                </button>
+                                <button 
+                                  className="btn btn-sm btn-outline-secondary" 
+                                  onClick={handleClearCache}
+                                >
+                                  Reset Cache
+                                </button>
+                              </div>
+                            </div>
+                          ) : shippingOptions.length > 0 ? (
+                            <div className="mt-3">
+                              {shippingOptions.map((option) => (
+                                <div key={option.courier_code} className="mb-4">
+                                  <h5 className="text-primary">{option.courier_name}</h5>
+                                  {option.services.map((service) => (
+                                    <div key={service.service_code} className="form-check mb-3 ms-3 p-3 border rounded">
+                                      <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="selectedShipping"
+                                        id={`shipping-${option.courier_code}-${service.service_code}`}
+                                        checked={selectedShipping?.service_code === service.service_code && selectedCourier === option.courier_code}
+                                        onChange={() => handleSelectShipping(service, option.courier_code)}
+                                      />
+                                      <label className="form-check-label ms-2" htmlFor={`shipping-${option.courier_code}-${service.service_code}`}>
+                                        <strong>{service.service_name}</strong> - {service.cost_formatted}<br/>
+                                        <small className="text-muted">
+                                          {service.description} • Estimasi: {service.etd}
+                                        </small>
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="alert alert-info mt-3">
+                              <small>Tidak ada opsi pengiriman tersedia untuk alamat ini</small>
+                              <button 
+                                className="btn btn-sm btn-outline-primary ms-2" 
+                                onClick={() => loadShippingOptions()}
+                                disabled={shippingLoading}
+                              >
+                                Muat Ulang
+                              </button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
-                  </div>
+                  )}
+
+                  {/* Step 3: Payment Method */}
+                  {activeStep === 2 && (
+                    <div className="p-3 p-lg-5 border bg-white rounded">
+                      <h3 className="mb-4">Pilih Metode Pembayaran</h3>
+                      
+                      {paymentMethodsLoading ? (
+                        <div className="mt-3">
+                          <div className="d-flex align-items-center">
+                            <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                            <small className="text-muted">Memuat metode pembayaran...</small>
+                          </div>
+                        </div>
+                      ) : paymentMethodsError ? (
+                        <div className="alert alert-warning mt-3">
+                          <small>{paymentMethodsError}</small>
+                          <div className="mt-2">
+                            <button 
+                              className="btn btn-sm btn-outline-primary" 
+                              onClick={loadPaymentMethods}
+                              disabled={paymentMethodsLoading}
+                            >
+                              Coba Lagi
+                            </button>
+                          </div>
+                        </div>
+                      ) : paymentMethods ? (
+                        <div className="mt-3">
+                          {/* COD Option - Always show first */}
+                          <div className="form-check mb-3 p-3 border rounded">
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name="paymentMethod"
+                              id="payment-cod"
+                              value="cod"
+                              checked={paymentMethod === "cod"}
+                              onChange={(e) => handlePaymentMethodSelect(e.target.value)}
+                            />
+                            <label className="form-check-label ms-2" htmlFor="payment-cod">
+                              <strong>Bayar di Tempat (COD)</strong>
+                              <small className="text-muted d-block">Bayar saat barang diterima</small>
+                            </label>
+                          </div>
+
+                          {/* Online Payment Methods */}
+                          {Object.entries(paymentMethods.groupedMethods).map(([category, methods]) => {
+                            if (methods.length === 0) return null;
+                            
+                            return (
+                              <div key={category} className="mb-4">
+                                <h5 className="text-primary mb-3">
+                                  {isCategoryKey(category)
+                                    ? getCategoryDisplayName(category)
+                                    : "Metode Tidak Dikenal"}
+                                </h5>
+
+                                <div className="ms-3">
+                                  {methods.map((method: DuitkuPaymentMethod) => {
+                                    const methodInfo = getPaymentMethodInfo(method);
+                                    const inputId = `payment-${method.paymentMethod}`;
+                                    
+                                    return (
+                                      <div key={method.paymentMethod} className="form-check mb-3 p-3 border rounded">
+                                        <input
+                                          className="form-check-input"
+                                          type="radio"
+                                          name="paymentMethod"
+                                          id={inputId}
+                                          value={method.paymentMethod}
+                                          checked={paymentMethod === method.paymentMethod}
+                                          onChange={(e) => handlePaymentMethodSelect(e.target.value, method)}
+                                        />
+                                        <label className="form-check-label d-flex align-items-center ms-2" htmlFor={inputId}>
+                                          {method.paymentImage && (
+                                            <img 
+                                              src={method.paymentImage} 
+                                              alt={method.paymentName}
+                                              className="me-3"
+                                              style={{ width: '32px', height: '20px', objectFit: 'contain' }}
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                              }}
+                                            />
+                                          )}
+                                          <div>
+                                            <strong>{methodInfo.name}</strong>
+                                            {methodInfo.fee > 0 && (
+                                              <small className="text-muted d-block">
+                                                Biaya admin: {methodInfo.feeFormatted}
+                                              </small>
+                                            )}
+                                          </div>
+                                        </label>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          <div className="mt-3">
+                            <small className="text-muted">
+                              Total metode pembayaran: {paymentMethods.totalMethods}
+                            </small>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3">
+                          <div className="form-check mb-2 p-3 border rounded">
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name="paymentMethod"
+                              id="payment-cod-fallback"
+                              value="cod"
+                              checked={paymentMethod === "cod"}
+                              onChange={(e) => handlePaymentMethodSelect(e.target.value)}
+                            />
+                            <label className="form-check-label ms-2" htmlFor="payment-cod-fallback">
+                              <strong>Bayar di Tempat (COD)</strong>
+                            </label>
+                          </div>
+                          <small className="text-muted">Metode pembayaran online akan dimuat setelah total harga tersedia</small>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Step 4: Order Summary and Notes */}
+                  {activeStep === 3 && (
+                    <div className="row">
+                      {/* Order Notes Section */}
+                      <div className="col-md-6 mb-4">
+                        <div className="p-3 p-lg-5 border bg-white h-100 rounded">
+                          <h4 className="mb-4">Catatan Pesanan</h4>
+                          
+                          <div className="form-group">
+                            <label htmlFor="c_order_notes" className="text-black mb-2">
+                              <strong>Catatan untuk Penjual (Opsional)</strong>
+                            </label>
+                            <textarea
+                              name="c_order_notes"
+                              id="c_order_notes"
+                              className="form-control"
+                              placeholder="Tulis catatan khusus untuk pesanan Anda (opsional)..."
+                              value={orderNotes}
+                              onChange={handleNotesChange}
+                              rows={6}
+                              maxLength={1000}
+                            ></textarea>
+                            <div className="d-flex justify-content-between align-items-center mt-2">
+                              <small className="text-muted">
+                                Catatan akan disimpan dan dapat dilihat oleh penjual
+                              </small>
+                              <small className="text-muted">
+                                {orderNotes.length}/1000 karakter
+                              </small>
+                            </div>
+                            {orderNotes.length > 900 && (
+                              <small className="text-warning">
+                                Mendekati batas maksimal karakter
+                              </small>
+                            )}
+                          </div>
+
+                          {/* Selected Information Summary */}
+                          <div className="mt-4">
+                            <h5>Informasi Terpilih:</h5>
+                            <div className="small">
+                              <p><strong>Alamat:</strong>{selectedAddress?.Title}, {selectedAddress?.Alamat}, {selectedAddress?.Kecamatan}, {selectedAddress?.Kota}, {selectedAddress?.Provinsi}</p>
+                              <p><strong>Pengiriman:</strong> {selectedCourier?.toUpperCase()} - {selectedShipping?.service_name}</p>
+                              <p><strong>Pembayaran:</strong> {paymentMethod === 'cod' ? 'Bayar di Tempat (COD)' : selectedPaymentMethod?.paymentName}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Order Summary Section */}
+                      <div className="col-md-6">
+                        <div className="p-3 p-lg-5 border bg-white rounded">
+                          <h4 className="mb-4">Ringkasan Pesanan</h4>
+                          
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Product</th>
+                                <th>Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCartItems.map((item) => (
+                                <tr key={item.id}>
+                                  <td>
+                                    <div className="small">
+                                      <strong>{item.product_title}</strong>
+                                      {item.variant_title && (
+                                        <div className="text-muted">
+                                          Variant: {item.variant_title}
+                                        </div>
+                                      )}
+                                      <div>Qty: {item.quantity}</div>
+                                    </div>
+                                  </td>
+                                  <td>{formatPrice(item.total_price)}</td>
+                                </tr>
+                              ))}
+                              
+                              <tr>
+                                <td className="text-black font-weight-bold">
+                                  <strong>Subtotal</strong>
+                                </td>
+                                <td className="text-black">{formatPrice(selectedTotals.total_price)}</td>
+                              </tr>
+                              
+                              {selectedShipping && (
+                                <tr>
+                                  <td className="text-black font-weight-bold">
+                                    <strong>Ongkir ({selectedCourier?.toUpperCase()})</strong>
+                                  </td>
+                                  <td className="text-black">{selectedShipping.cost_formatted}</td>
+                                </tr>
+                              )}
+                              
+                              {getSelectedPaymentMethodFee() > 0 && (
+                                <tr>
+                                  <td className="text-black font-weight-bold">
+                                    <strong>Biaya Admin</strong>
+                                  </td>
+                                  <td className="text-black">{formatPrice(getSelectedPaymentMethodFee())}</td>
+                                </tr>
+                              )}
+                              
+                              <tr>
+                                <td className="text-black font-weight-bold">
+                                  <strong>Total Pembayaran</strong>
+                                </td>
+                                <td className="text-black font-weight-bold">
+                                  <strong>{formatPrice(getTotalAmount())}</strong>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+
+                          <div className="mt-3">
+                            <small className="text-muted">
+                              Total Item: {selectedTotals.total_items} • Berat: {selectedTotals.total_weight}g
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="wizard-navigation mt-4 d-flex justify-content-between">
+                  <button 
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handlePrev}
+                    disabled={activeStep === 0}
+                  >
+                    <i className="fas fa-chevron-left me-2"></i>
+                    Kembali
+                  </button>
+                  
+                  {activeStep < steps.length - 1 ? (
+                    <button 
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={handleNext}
+                    >
+                      Selanjutnya
+                      <i className="fas fa-chevron-right ms-2"></i>
+                    </button>
+                  ) : (
+                    <button 
+                      type="button"
+                      className="btn btn-success"
+                      onClick={handleComplete}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-shopping-cart me-2"></i>
+                          Buat Pesanan
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* Custom styling for the wizard */}
+              <style>{`
+                .wizard-step {
+                  transition: all 0.3s ease;
+                }
+                
+                .wizard-step.clickable:hover {
+                  transform: translateY(-2px);
+                }
+                
+                .step-circle {
+                  width: 50px;
+                  height: 50px;
+                  border-radius: 50%;
+                  font-size: 18px;
+                  transition: all 0.3s ease;
+                }
+                
+                .wizard-step.active .step-circle {
+                  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+                }
+                
+                .wizard-step.completed .step-circle {
+                  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25);
+                }
+                
+                .form-check-input:checked {
+                  background-color: #dc3545;
+                  border-color: #dc3545;
+                }
+                
+                .form-check-input:focus {
+                  border-color: #dc3545;
+                  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+                }
+                
+                .btn-danger {
+                  background-color: #dc3545;
+                  border-color: #dc3545;
+                }
+                
+                .btn-danger:hover {
+                  background-color: #c82333;
+                  border-color: #bd2130;
+                }
+                
+                .progress-bar {
+                  transition: width 0.6s ease;
+                }
+
+                .wizard-content {
+                  min-height: 400px;
+                }
+
+                @media (max-width: 768px) {
+                  .step-circle {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 14px;
+                  }
+                  
+                  .step-title {
+                    font-size: 12px;
+                  }
+                }
+              `}</style>
             </div>
           </div>
         </div>
