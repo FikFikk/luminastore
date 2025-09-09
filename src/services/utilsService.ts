@@ -98,7 +98,6 @@ export const utilsService = {
       method: "GET",
       headers: getAuthHeaders(),
       cache: 'no-store',
-      next: { revalidate: 10 }
     });
 
     if (!response.ok) {
