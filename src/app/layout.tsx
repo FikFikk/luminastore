@@ -1,4 +1,4 @@
-// app/layout.tsx
+// app/layout.tsx - KODE FINAL
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -22,16 +22,73 @@ const geistMono = Geist_Mono({
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const siteConfig = await utilsService.getSiteConfig();
+    const faviconUrl = siteConfig?.favicon?.original;
     
+    // Deteksi type favicon yang akurat
+    let iconConfig = {};
+    
+    if (faviconUrl) {
+      const url = faviconUrl.toLowerCase();
+      
+      if (url.endsWith('.png')) {
+        iconConfig = {
+          icon: [
+            { url: faviconUrl, type: 'image/png', sizes: '32x32' },
+            { url: faviconUrl, type: 'image/png', sizes: '16x16' },
+          ],
+          apple: { url: faviconUrl, sizes: '180x180' },
+          shortcut: { url: faviconUrl, type: 'image/png' },
+        };
+      } else if (url.endsWith('.ico')) {
+        iconConfig = {
+          icon: { url: faviconUrl, type: 'image/x-icon' },
+          shortcut: { url: faviconUrl, type: 'image/x-icon' },
+        };
+      } else if (url.endsWith('.svg')) {
+        iconConfig = {
+          icon: { url: faviconUrl, type: 'image/svg+xml' },
+          shortcut: { url: faviconUrl, type: 'image/svg+xml' },
+        };
+      } else {
+        iconConfig = { icon: faviconUrl };
+      }
+    }
+
     return {
       title: siteConfig?.site_name || "LuminaStore.",
       description: siteConfig?.tagline || "Your tagline here",
-      icons: {
-        icon: siteConfig?.favicon?.original || "/favicon.ico",
-        shortcut: siteConfig?.favicon?.original || "/favicon.ico",
-        apple: siteConfig?.favicon?.original || "/favicon.ico",
+      icons: iconConfig,
+      // keywords: siteConfig?.keywords || "ecommerce, online shop, store",
+      authors: [{ name: siteConfig?.site_name || "LuminaStore" }],
+      creator: siteConfig?.site_name || "LuminaStore",
+      robots: {
+        index: true,
+        follow: true,
       },
-      // Tambah untuk force refresh
+      // Open Graph untuk social media
+      openGraph: {
+        title: siteConfig?.site_name || "LuminaStore.",
+        description: siteConfig?.tagline || "Your tagline here",
+        siteName: siteConfig?.site_name || "LuminaStore.",
+        images: faviconUrl ? [
+          {
+            url: faviconUrl,
+            width: 1200,
+            height: 630,
+            alt: siteConfig?.site_name || "LuminaStore.",
+          }
+        ] : [],
+        locale: 'id_ID',
+        type: 'website',
+      },
+      // Twitter Card
+      twitter: {
+        card: 'summary_large_image',
+        title: siteConfig?.site_name || "LuminaStore.",
+        description: siteConfig?.tagline || "Your tagline here",
+        images: faviconUrl ? [faviconUrl] : [],
+      },
+      // Force no cache
       other: {
         'cache-control': 'no-cache, no-store, must-revalidate',
         'pragma': 'no-cache',
@@ -50,13 +107,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const siteConfig = await utilsService.getSiteConfig();
-
   return (
     <html lang="en">
       <head>
@@ -94,11 +149,16 @@ export default async function RootLayout({
           </AuthProvider>
         </Providers>
 
-        {/* JS */}
+        {/* Bootstrap JS */}
         <Script
-          src="/assets/js/bootstrap.bundle.min.js"
-          strategy="beforeInteractive"
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
         />
+
+        {/* Local JS */}
+        <Script src="/assets/js/bootstrap.bundle.min.js" strategy="beforeInteractive" />
         <Script src="/assets/js/tiny-slider.js" strategy="afterInteractive" />
         <Script src="/assets/js/custom.js" strategy="afterInteractive" />
       </body>

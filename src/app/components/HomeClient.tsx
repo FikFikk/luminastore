@@ -214,7 +214,7 @@ export default function Home() {
             {latestProducts.length > 0 ? (
               latestProducts.map((product) => (
                 <div key={product.id} className="product-card">
-                  <a href={`/product/${product.slug}`} className="product-link">
+                  <Link href={`/product/${product.slug}`} className="product-link">
                     <div className="product-image">
                       {product.image ? (
                         <div style={{ width: 280, height: 280, position: 'relative' }}>
@@ -250,7 +250,7 @@ export default function Home() {
                         {product.price_range.display || 'Price not available'}
                       </p>
                     </div>
-                  </a>
+                  </Link>
                 </div>
               ))
             ) : (
@@ -309,7 +309,7 @@ export default function Home() {
                     <div className="popular-content">
                       <div className="popular-header">
                         <h3>
-                          <a href={`/product/${product.slug}`}>{product.title}</a>
+                          <Link href={`/product/${product.slug}`}>{product.title}</Link>
                         </h3>
                         <span className="rank">#{index + 1}</span>
                       </div>
@@ -320,9 +320,9 @@ export default function Home() {
                         {product.price_range.display || 'Price not available'}
                       </p>
                     </div>
-                    <a href={`/product/${product.slug}`} className="view-btn">
+                    <Link href={`/product/${product.slug}`} className="view-btn">
                       View Product
-                    </a>
+                    </Link>
                   </div>
                 </div>
               ))
