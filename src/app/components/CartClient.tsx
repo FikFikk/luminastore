@@ -7,6 +7,7 @@ import {
 import { getProducts } from "@/services/productService";
 import { Shimmer } from "react-shimmer";
 import { useCartPage } from "@/hooks/useCartPage";
+import Link from "next/link";
 
 function CartPage() {
   // Remove local cart state - use Redux state instead
@@ -532,16 +533,20 @@ function CartPage() {
 
                       <div className="row">
                         <div className="col-md-12">
-                          <button
-                            className="btn btn-black btn-lg py-3 btn-block"
-                            onClick={handleProceedToCheckout}
-                            disabled={
-                              selectedItems.size === 0 || 
-                              cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock)
+                          <Link 
+                          href={selectedItems.size === 0 || cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock) ? "#" : "/cart/checkout"}
+                          onClick={(e) => {
+                            // prevent navigation jika kondisi "disabled"
+                            if (selectedItems.size === 0 || cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock)) {
+                              e.preventDefault();
                             }
-                          >
-                            Proceed To Checkout ({selectedItems.size} items)
-                          </button>
+                          }}
+                          className={`btn btn-black btn-lg py-3 btn-block ${
+                            selectedItems.size === 0 || cartItems.filter(item => selectedItems.has(item.id)).some(item => item.insufficient_stock) ? "disabled" : ""
+                          }`}
+                        >
+                          Proceed To Checkout ({selectedItems.size} items)
+                        </Link>
                           {selectedItems.size === 0 && (
                             <small className="text-danger d-block mt-2">
                               Please select at least one item to checkout
