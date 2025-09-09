@@ -97,6 +97,8 @@ export const utilsService = {
     const response = await fetch(`${API_BASE}/site-config`, {
       method: "GET",
       headers: getAuthHeaders(),
+      cache: 'no-store',
+      next: { revalidate: 10 }
     });
 
     if (!response.ok) {
